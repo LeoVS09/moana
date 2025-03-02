@@ -13,7 +13,7 @@ from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolArg
 from typing_extensions import Annotated
 
-from react_agent.configuration import Configuration
+from moana.configuration import Configuration
 
 
 async def search(

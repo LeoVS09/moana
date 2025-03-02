@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 
 from langchain_core.runnables import RunnableConfig, ensure_config
 
-from react_agent import prompts
+from moana import prompts
 
 model = os.environ.get('LLM_MODEL', 'anthropic/claude-3-5-sonnet-20240620')
 print(f"Using model: {model}")
