@@ -6,6 +6,7 @@ Works with a chat model with tool calling support.
 from datetime import datetime, timezone
 from typing import Dict, List, Literal, cast
 
+from langgraph.config import get_store
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
@@ -30,7 +31,7 @@ store = InMemoryStore(
 memory_manager = create_memory_store_manager(
     "anthropic:claude-3-5-sonnet-latest",
     # Store memories in the "memories" namespace
-    namespace=("memories",),
+    namespace=("{user_id}", "memories"),
 )
 
 # Define the function that calls the model
@@ -53,11 +54,31 @@ async def call_model(
     # Initialize the model with tool binding. Change the model or add more tools here.
     model = load_chat_model(configuration.model).bind_tools(TOOLS)
 
-    # Format the system prompt. Customize this to change the agent's behavior.
-    system_message = configuration.system_prompt.format(
-        system_time=datetime.now(tz=timezone.utc).isoformat()
+    # Retrieve relevant memories for context
+    recent_messages_content = [m.content for m in state.messages[-3:] if hasattr(m, 'content')]
+    
+    s = get_store() # direct store access not work, need retrive it through function
+    memories = await s.asearch(
+        (configuration.user_id, "memories"),
+        query=str(recent_messages_content),
+        limit=10,
     )
 
+    # Format memories for inclusion in the prompt
+    formatted_memories = ""
+    if memories:
+        memory_entries = "\n".join(f"[{mem.key}]: {mem.value} (similarity: {mem.score})" for mem in memories)
+        formatted_memories = f"""
+<memories>
+{memory_entries}
+</memories>"""
+
+    # Format the system prompt with memories and current time
+    system_message = configuration.system_prompt.format(
+        system_time=datetime.now(tz=timezone.utc).isoformat(),
+        user_info=formatted_memories
+    )
+    
     # Get the model's response
     response = cast(
         AIMessage,
