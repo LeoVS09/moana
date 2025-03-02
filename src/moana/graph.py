@@ -34,6 +34,9 @@ memory_manager = create_memory_store_manager(
     namespace=("{user_id}", "memories"),
 )
 
+# Wrap memory_manager with ReflectionExecutor for deferred processing
+executor = ReflectionExecutor(memory_manager)
+
 # Define the function that calls the model
 async def call_model(
     state: State, config: RunnableConfig
@@ -102,7 +105,11 @@ async def call_model(
             {"role": "assistant", "content": response.content},
         ]
     }
-    await memory_manager.ainvoke(to_process)
+    
+    # Use the executor to schedule memory processing with a delay
+    # This allows for more efficient batching of memory operations
+    # Half a second delay - adjust based on your application needs
+    executor.submit(to_process, after_seconds=0.5)
 
     # Return the model's response as a list to be added to existing messages
     return {"messages": [response]}
