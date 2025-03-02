@@ -10,15 +10,30 @@ from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
+from langgraph.store.memory import InMemoryStore
+from langmem import create_memory_store_manager, ReflectionExecutor
 
 from moana.configuration import Configuration
 from moana.state import InputState, State
 from moana.tools import TOOLS
 from moana.utils import load_chat_model
 
+# Initialize memory store
+store = InMemoryStore(
+    index={
+        "dims": 1536,
+        "embed": "openai:text-embedding-3-small",
+    }
+)
+
+# Create memory manager to extract memories from conversations
+memory_manager = create_memory_store_manager(
+    "anthropic:claude-3-5-sonnet-latest",
+    # Store memories in the "memories" namespace
+    namespace=("memories",),
+)
+
 # Define the function that calls the model
-
-
 async def call_model(
     state: State, config: RunnableConfig
 ) -> Dict[str, List[AIMessage]]:
@@ -53,21 +68,26 @@ async def call_model(
 
     # Handle the case when it's the last step and the model still wants to use a tool
     if state.is_last_step and response.tool_calls:
-        return {
-            "messages": [
-                AIMessage(
-                    id=response.id,
-                    content="Sorry, I could not find an answer to your question in the specified number of steps.",
-                )
-            ]
-        }
+        response = AIMessage(
+            id=response.id,
+            content="Sorry, I could not find an answer to your question in the specified number of steps.",
+        )
+
+    # Extract and store memories from the conversation
+    to_process = {
+        "messages": [
+            {"role": "system", "content": system_message},
+            *[{"role": m.type, "content": m.content} for m in state.messages],
+            {"role": "assistant", "content": response.content},
+        ]
+    }
+    await memory_manager.ainvoke(to_process)
 
     # Return the model's response as a list to be added to existing messages
     return {"messages": [response]}
 
 
 # Define a new graph
-
 builder = StateGraph(State, input=InputState, config_schema=Configuration)
 
 # Define the two nodes we will cycle between
@@ -119,5 +139,6 @@ builder.add_edge("tools", "call_model")
 graph = builder.compile(
     interrupt_before=[],  # Add node names here to update state before they're called
     interrupt_after=[],  # Add node names here to update state after they're called
+    store=store,  # Add the memory store to the graph
 )
 graph.name = "Moana"  # This customizes the name in LangSmith
