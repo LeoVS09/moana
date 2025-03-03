@@ -1,4 +1,4 @@
-"""Memory management for Moana."""
+"""Long-term memory management for Moana."""
 
 from langgraph.store.memory import InMemoryStore
 from langmem import create_memory_store_manager, ReflectionExecutor

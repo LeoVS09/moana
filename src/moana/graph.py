@@ -6,7 +6,6 @@ Works with a chat model with tool calling support.
 from datetime import datetime, timezone
 from typing import Dict, List, Literal, cast
 
-from langgraph.config import get_store
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
@@ -18,7 +17,7 @@ from moana.tools import TOOLS
 from moana.utils import load_chat_model
 
 # Import memory-related functionality
-from moana.memory import store, recall, memorize
+from moana.memory import store, recall, memorize, checkpointer
 
 # Define the function that calls the model
 async def call_model(
@@ -126,5 +125,6 @@ graph = builder.compile(
     interrupt_before=[],  # Add node names here to update state before they're called
     interrupt_after=[],  # Add node names here to update state after they're called
     store=store,  # Add the memory store to the graph
+    checkpointer=checkpointer
 )
 graph.name = "Moana"  # This customizes the name in LangSmith

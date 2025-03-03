@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Any
 from langgraph.config import get_store
-from memory.memory import executor
+from moana.memory.long_term import executor
 from moana.state import State
 from moana.configuration import Configuration
 
