@@ -11,42 +11,14 @@ from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
-from langgraph.store.memory import InMemoryStore
-from langmem import create_memory_store_manager, ReflectionExecutor
 
 from moana.configuration import Configuration
 from moana.state import InputState, State
 from moana.tools import TOOLS
 from moana.utils import load_chat_model
-from pydantic import BaseModel, Field
 
-# Initialize memory store
-store = InMemoryStore(
-    index={
-        "dims": 1536,
-        "embed": "openai:text-embedding-3-small",
-    }
-)
-
-class Memory(BaseModel): # 
-    """Memories about new facts, preferences, and relationships."""
-    content: str = Field(..., description="The main content of the memory. For example:'User expressed interest in learning about French.'")
-    context: str = Field(..., description="Additional context for the memory. For example:'This was mentioned while discussing career options in Europe.'")
-    confidence: str = Field(..., description="The confidence in memory accuracy. For example: 'high', 'medium', 'low'")
-
-
-# Create memory manager to extract memories from conversations
-memory_manager = create_memory_store_manager(
-    "anthropic:claude-3-5-sonnet-latest",
-    # Store memories in the "memories" namespace
-    namespace=("{user_id}", "memories"),
-    schemas=[Memory],
-    instructions="Extract user preferences and any other useful information. If a memory conflicts with an existing one, then just update it",
-
-)
-
-# Wrap memory_manager with ReflectionExecutor for deferred processing
-executor = ReflectionExecutor(memory_manager)
+# Import memory-related functionality
+from moana.memory import store, recall, memorize
 
 # Define the function that calls the model
 async def call_model(
@@ -71,21 +43,11 @@ async def call_model(
     # Retrieve relevant memories for context
     recent_messages_content = [m.content for m in state.messages[-3:] if hasattr(m, 'content')]
     
-    s = get_store() # direct store access not work, need retrive it through function
-    memories = await s.asearch(
-        (configuration.user_id, "memories"),
-        query=str(recent_messages_content),
-        limit=10,
+    # Get and format relevant memories
+    formatted_memories = await recall(
+        configuration.user_id, 
+        recent_messages_content
     )
-
-    # Format memories for inclusion in the prompt
-    formatted_memories = ""
-    if memories:
-        memory_entries = "\n".join(f"[{mem.key}]: {mem.value} (similarity: {mem.score})" for mem in memories)
-        formatted_memories = f"""
-<memories>
-{memory_entries}
-</memories>"""
 
     # Format the system prompt with memories and current time
     system_message = configuration.system_prompt.format(
@@ -110,19 +72,12 @@ async def call_model(
             content="Sorry, I could not find an answer to your question in the specified number of steps.",
         )
 
-    # Extract and store memories from the conversation
-    to_process = {
-        "messages": [
-            {"role": "system", "content": system_message},
-            *[{"role": m.type, "content": m.content} for m in state.messages],
-            {"role": "assistant", "content": response.content},
-        ]
-    }
-    
-    # Use the executor to schedule memory processing with a delay
-    # This allows for more efficient batching of memory operations
-    # Half a second delay - adjust based on your application needs
-    executor.submit(to_process, after_seconds=0.5)
+    # Process conversation for memory extraction
+    memorize(
+        system_message,
+        state.messages,
+        response.content
+    )
 
     # Return the model's response as a list to be added to existing messages
     return {"messages": [response]}
