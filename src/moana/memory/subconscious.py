@@ -3,8 +3,10 @@
 from typing import Dict, List, Any
 from langgraph.config import get_store
 from memory.memory import executor
+from moana.state import State
+from moana.configuration import Configuration
 
-async def recall(user_id: str, recent_messages_content: List[str], limit: int = 10) -> str:
+async def recall(configuration: Configuration, state: State, limit: int = 10) -> str:
     """Retrieve and format relevant memories.
     
     Args:
@@ -15,7 +17,12 @@ async def recall(user_id: str, recent_messages_content: List[str], limit: int = 
     Returns:
         str: Formatted memories string ready for inclusion in prompts.
     """
-    memories = await retrieve_relevant_memories(user_id, recent_messages_content, limit)
+
+    # Retrieve relevant memories for context
+    recent_messages_content = [m.content for m in state.messages[-3:] if hasattr(m, 'content')]
+    
+    memories = await retrieve_relevant_memories(configuration.user_id, recent_messages_content, limit)
+
     return format_memories(memories)
 
 
@@ -41,7 +48,7 @@ def format_memories(memories: List[Any]) -> str:
 </memories>"""
 
 
-def memorize(system_message: str, messages: List[Dict], response_content: str, delay: float = 0.5):
+def memorize(state: State, system_message: str, response_content: str, delay: float = 0.5):
     """Process a conversation to extract and store memories.
     
     Args:
@@ -53,7 +60,7 @@ def memorize(system_message: str, messages: List[Dict], response_content: str, d
     to_process = {
         "messages": [
             {"role": "system", "content": system_message},
-            *[{"role": m.type, "content": m.content} for m in messages],
+            *[{"role": m.type, "content": m.content} for m in state.messages],
             {"role": "assistant", "content": response_content},
         ]
     }

@@ -40,19 +40,13 @@ async def call_model(
     # Initialize the model with tool binding. Change the model or add more tools here.
     model = load_chat_model(configuration.model).bind_tools(TOOLS)
 
-    # Retrieve relevant memories for context
-    recent_messages_content = [m.content for m in state.messages[-3:] if hasattr(m, 'content')]
-    
     # Get and format relevant memories
-    formatted_memories = await recall(
-        configuration.user_id, 
-        recent_messages_content
-    )
+    memories = await recall(configuration, state)
 
     # Format the system prompt with memories and current time
     system_message = configuration.system_prompt.format(
         system_time=datetime.now(tz=timezone.utc).isoformat(),
-        user_info=formatted_memories
+        user_info=memories
     )
 
     print(system_message)
@@ -73,11 +67,7 @@ async def call_model(
         )
 
     # Process conversation for memory extraction
-    memorize(
-        system_message,
-        state.messages,
-        response.content
-    )
+    memorize(state, system_message, response.content)
 
     # Return the model's response as a list to be added to existing messages
     return {"messages": [response]}
