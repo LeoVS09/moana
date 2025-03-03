@@ -4,7 +4,7 @@ import os
 from langgraph.store.memory import InMemoryStore
 from langmem import create_memory_store_manager, ReflectionExecutor
 
-from .models import Memory, Profile, Triple
+from .models import Episode, Memory, Profile, Triple
 
 
 # Get model names from environment variables with defaults
@@ -62,3 +62,16 @@ profile_manager = create_memory_store_manager(
 
 # Wrap profile_manager with ReflectionExecutor for deferred processing
 profile_executor = ReflectionExecutor(profile_manager) 
+
+# Episodic memory
+episodes_manager = create_memory_store_manager(
+    MEMORY_MODEL,
+    namespace=("{user_id}", "episodes"),
+    schemas=[Episode],
+    instructions="Extract examples of successful explanations," 
+    "capturing the full chain of reasoning."
+    "Be concise in your explanations and precise in the logic of your reasoning."
+)
+
+# Wrap episodes_manager with ReflectionExecutor for deferred processing
+episodes_executor = ReflectionExecutor(episodes_manager) 

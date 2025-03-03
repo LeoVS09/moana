@@ -2,7 +2,7 @@
 
 from typing import List, Any
 from langgraph.config import get_store
-from .long_term import memories_executor, triples_executor, profile_executor
+from .long_term import memories_executor, triples_executor, profile_executor, episodes_executor
 from moana.state import State
 from moana.configuration import Configuration
 
@@ -27,10 +27,13 @@ async def recall(configuration: Configuration, state: State) -> str:
     # Retrieve machine-readable memories, can be short and concise, but probably harder to find relevant ones
     triples = await retrieve_relevant_memories(configuration.user_id, "triples", recent_messages_content, limit=20)
 
+    # Retrieve episodic memories, long and verbose, but can be usefull for reasoning
+    episodes = await retrieve_relevant_memories(configuration.user_id, "episodes", recent_messages_content, limit=1)
+
     # Retrieve user profile
     profile = await retrieve_user_profile(configuration.user_id)
 
-    return format_memories(memories, triples, profile)
+    return format_memories(memories, triples, episodes, profile)
 
 
 async def retrieve_relevant_memories(user_id: str, namespace: str, messages: List[str], limit: int = 10):
@@ -85,7 +88,7 @@ def format_entry_block(entries: List[Any], tag: str) -> str:
 </{tag}>"""
 
 
-def format_memories(memories: List[Any], triples: List[Any], profile: str = None) -> str:
+def format_memories(memories: List[Any], triples: List[Any], episodes: List[Any], profile: str = None) -> str:
     """Format memories for inclusion in the prompt.
     
     Args:
@@ -107,10 +110,25 @@ def format_memories(memories: List[Any], triples: List[Any], profile: str = None
     if triples:
         result += format_entry_block(triples, "knowledge")
     
+    if episodes:
+        result += '\n\n <Episodic Memories>'
+        for i, item in enumerate(episodes, start=1):
+            episode = item.value["content"]
+            result += f"""
+
+Episode {i}:
+When: {episode['observation']}
+Thought: {episode['thoughts']}
+Did: {episode['action']}
+Result: {episode['result']}
+        """
+        
+        result += '</Episodic Memories>'
+
     return result
 
 
-def memorize(state: State, system_message: str, response_content: str, delay: float = 0.5):
+def memorize(state: State, system_message: str, response_content: str):
     """Process a conversation to extract and store memories.
     
     Args:
@@ -129,8 +147,10 @@ def memorize(state: State, system_message: str, response_content: str, delay: fl
     
     # Use the executors to schedule memory processing with a delay
     # Save contextual memory
-    memories_executor.submit(to_process, after_seconds=delay) 
+    memories_executor.submit(to_process, after_seconds=0.5) 
     # Save semantic memory
-    triples_executor.submit(to_process, after_seconds=delay) 
+    triples_executor.submit(to_process, after_seconds=0.5) 
     # Save semantic profile memory
-    profile_executor.submit(to_process, after_seconds=delay) 
+    profile_executor.submit(to_process, after_seconds=0.5) 
+    # Save episodic memory
+    episodes_executor.submit(to_process, after_seconds=0.5) 
