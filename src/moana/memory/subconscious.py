@@ -1,8 +1,8 @@
 """Subconscious memory operations for Moana."""
 
-from typing import Dict, List, Any
+from typing import List, Any
 from langgraph.config import get_store
-from moana.memory.long_term import executor
+from .long_term import executor
 from moana.state import State
 from moana.configuration import Configuration
 

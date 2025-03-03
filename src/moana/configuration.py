@@ -21,7 +21,7 @@ class Configuration:
         ```
         # .env file
         USER_ID=user123
-        MODEL=anthropic/claude-3-5-sonnet-20240620
+        MODEL=anthropic:claude-3-5-sonnet-20240620
         MAX_SEARCH_RESULTS=5
         ```
     """
@@ -45,10 +45,10 @@ class Configuration:
 
     """Can be set with MODEL environment variable.""" 
     model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="anthropic/claude-3-5-sonnet-20240620",
+        default="anthropic:claude-3-5-sonnet-20240620",
         metadata={
             "description": "The name of the language model to use for the agent's main interactions. "
-            "Should be in the form: provider/model-name. "
+            "Should be in the form: provider:model-name. "
         },
     )
 
