@@ -1,12 +1,11 @@
 """Memory data models."""
 
+from typing import List
 from pydantic import BaseModel, Field
 
+# Contextual memory
 class Memory(BaseModel):
-    """
-    Save notable memories the user has shared with you for later recall. 
-    Memories about new facts, preferences, and relationships.
-    """
+    """Save notable memories the user has shared with you for later recall."""
 
     content: str = Field(
         ..., 
@@ -29,3 +28,40 @@ class Memory(BaseModel):
         description="The confidence in memory accuracy."
         "For example: 'high', 'medium', 'low'"
     ) 
+
+# Semantic memory
+class Triple(BaseModel):
+    """Store all new facts, preferences, and relationships as triples."""
+    subject: str = Field(
+        ..., 
+        description="The subject of the triple."
+    )
+    predicate: str = Field(
+        ..., 
+        description="The predicate of the triple."
+    )
+    object: str = Field(
+        ..., 
+        description="The object of the triple."
+    )
+
+# Semantic profile memory
+# Available during every interaction
+class Profile(BaseModel):
+    """Represents the full representation of a user."""
+    name: str | None = Field(
+        None,
+        description="The name of the user."
+    )
+    age: int | None = Field(
+        None,
+        description="The age of the user."
+    )
+    gender: str | None = Field(
+        None,
+        description="The gender of the user."
+    )
+    location: str | None = Field(
+        None,
+        description="The location of the user."
+    )
