@@ -1,12 +1,17 @@
 # Moana: Multi-layered Memory Optimized Agent
 
-Moana is a Multi-layered Memory Optimized Agent that leverages a subconscious long-term memory system to learn from interactions with users and recall information across conversations. Built on [LangGraph](https://github.com/langchain-ai/langgraph), Moana demonstrates how agents can maintain persistent knowledge and improve over time.
+Moana is a Multi-layered Memory Optimized Agent that leverages a sophisticated memory system to learn from interactions with users and recall information across conversations. Built on [LangGraph](https://github.com/langchain-ai/langgraph), Moana demonstrates how agents can maintain persistent knowledge and improve over time.
 
 ![Graph view in LangGraph studio UI](./static/studio_ui.png)
 
 ## Key Features
 
-- **Subconscious Memory**: Stores and retrieves important information from past interactions
+- **Multi-layered Memory Architecture**: Combines short-term dialog memory with multiple types of long-term memory
+- **Short-term Dialog Memory**: Maintains context within the current conversation
+- **Contextual Memory**: Human-readable free format memory with advanced search capabilities
+- **Semantic Knowledge Memory**: Machine-readable triples-based graph memory for reasoning and planning
+- **User Profile Memory**: Stores base knowledge about the user for personalized interactions
+- **Episodic Memory**: Captures examples of successful explanations with full reasoning chains
 - **Cross-Conversation Recall**: Maintains context between separate conversations with users
 - **ReAct Architecture**: Uses the proven Reasoning + Acting pattern for flexible problem-solving
 - **Extensible Tool System**: Easily add new capabilities through custom tools
@@ -16,11 +21,28 @@ Moana is a Multi-layered Memory Optimized Agent that leverages a subconscious lo
 Moana's architecture includes:
 
 1. **User Query Processing**: Analyzes user input to understand intent and context
-2. **Memory Retrieval**: Searches subconscious memory for relevant past information
-3. **Reasoning**: Combines current query with memory to determine appropriate actions
+2. **Memory Retrieval**: Searches across multiple memory types for relevant information:
+   - Short-term dialog memory for current conversation context
+   - Contextual memory for free-form information
+   - Semantic knowledge memory for structured reasoning
+   - User profile memory for personalization
+   - Episodic memory for proven reasoning patterns
+3. **Reasoning**: Combines current query with retrieved memories to determine appropriate actions
 4. **Tool Execution**: Performs actions using available tools
-5. **Memory Update**: Stores important new information in long-term memory
+5. **Memory Update**: Stores important new information across appropriate memory systems
 6. **Response Generation**: Provides thoughtful answers based on all available context
+
+## Memory System Details
+
+Moana implements a sophisticated multi-layered memory system:
+
+- **Contextual Memory**: Human-readable free format memory that serves as a backup for other memory types. While it has better search capabilities than triples-based memory, it cannot store large amounts of data.
+
+- **Semantic Knowledge Memory**: A graph-based memory using machine-readable triples. Excellent for reasoning, planning, and deduction tasks.
+
+- **User Profile Memory**: Stores fundamental knowledge about the user to enable personalized interactions.
+
+- **Episodic Memory**: Captures examples of successful explanations, preserving the full chain of reasoning for future reference.
 
 ## Getting Started
 

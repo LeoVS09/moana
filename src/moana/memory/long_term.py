@@ -34,7 +34,7 @@ memories_manager = create_memory_store_manager(
 # Wrap memorys_manager with ReflectionExecutor for deferred processing
 memories_executor = ReflectionExecutor(memories_manager) 
 
-# Machine-readable triples based semantic memory
+# Machine-readable triples based semantic knowledge memory
 # Graph based memory that good for reasoning, planning and deduction
 triples_manager = create_memory_store_manager(
     MEMORY_MODEL,
@@ -47,7 +47,7 @@ triples_manager = create_memory_store_manager(
 # Wrap triples_manager with ReflectionExecutor for deferred processing
 triples_executor = ReflectionExecutor(triples_manager) 
 
-# Semantic profile memory
+# Semantic profile memory that stores base knowledge about the user
 profile_manager = create_memory_store_manager(
     MEMORY_MODEL,
     namespace=("{user_id}", "profile"),
