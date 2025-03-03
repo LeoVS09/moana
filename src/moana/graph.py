@@ -18,6 +18,7 @@ from moana.configuration import Configuration
 from moana.state import InputState, State
 from moana.tools import TOOLS
 from moana.utils import load_chat_model
+from pydantic import BaseModel, Field
 
 # Initialize memory store
 store = InMemoryStore(
@@ -27,11 +28,21 @@ store = InMemoryStore(
     }
 )
 
+class Memory(BaseModel): # 
+    """Memories about new facts, preferences, and relationships."""
+    content: str = Field(..., description="The main content of the memory. For example:'User expressed interest in learning about French.'")
+    context: str = Field(..., description="Additional context for the memory. For example:'This was mentioned while discussing career options in Europe.'")
+    confidence: str = Field(..., description="The confidence in memory accuracy. For example: 'high', 'medium', 'low'")
+
+
 # Create memory manager to extract memories from conversations
 memory_manager = create_memory_store_manager(
     "anthropic:claude-3-5-sonnet-latest",
     # Store memories in the "memories" namespace
     namespace=("{user_id}", "memories"),
+    schemas=[Memory],
+    instructions="Extract user preferences and any other useful information. If a memory conflicts with an existing one, then just update it",
+
 )
 
 # Wrap memory_manager with ReflectionExecutor for deferred processing
@@ -81,6 +92,8 @@ async def call_model(
         system_time=datetime.now(tz=timezone.utc).isoformat(),
         user_info=formatted_memories
     )
+
+    print(system_message)
     
     # Get the model's response
     response = cast(
