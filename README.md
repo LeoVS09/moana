@@ -119,3 +119,4 @@ While iterating on your graph, you can edit past state and rerun your app from p
 Follow up requests will be appended to the same thread. You can create an entirely new thread, clearing previous history, using the `+` button in the top right.
 
 You can find the latest documentation on [LangGraph](https://github.com/langchain-ai/langgraph) here, including examples and other references. LangGraph Studio also integrates with [LangSmith](https://smith.langchain.com/) for more in-depth tracing and collaboration with teammates.
+
