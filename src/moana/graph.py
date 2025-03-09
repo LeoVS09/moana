@@ -26,15 +26,6 @@ from moana.memory import store, recall, memorize, checkpointer
 MODEL = os.environ.get("MODEL", "anthropic:claude-3-5-sonnet-latest")
 
 
-agent = create_react_agent(
-    MODEL,
-    tools=TOOLS,
-    store=store,
-    checkpointer=checkpointer,
-    config_schema=Configuration,
-    prompt=SYSTEM_PROMPT
-)
-
 async def prepare_memories(state: State, store: BaseStore, config: RunnableConfig):
     configuration = Configuration.from_runnable_config(config)
 
@@ -48,18 +39,18 @@ async def prepare_memories(state: State, store: BaseStore, config: RunnableConfi
         "memories": memory_message
     }
 
-def call_agent(state: State):
-    # Create a new system message with memories
-    system_msg = {"role": "system", "content": state["memories"]}
-    
-    # Prepare messages with the system message containing memories
-    agent_messages = state["messages"] + [system_msg]
-    
-    # Invoke the agent with the prepared messages
-    response = agent.invoke({"messages": agent_messages})
-    
-    # Add agent message as last
-    return {"messages": state["messages"] + response["messages"][-1:]}
+def prepare_prompt(state: State):
+    return SYSTEM_PROMPT + "\n\n" + state["memories"]
+
+agent = create_react_agent(
+    MODEL,
+    tools=TOOLS,
+    store=store,
+    checkpointer=checkpointer,
+    state_schema=State,
+    config_schema=Configuration,
+    prompt=prepare_prompt
+)
 
 def memorize_conversation(state: State):
     memorize(state)
@@ -69,7 +60,7 @@ def memorize_conversation(state: State):
 builder = StateGraph(State, config_schema=Configuration)
 
 builder.add_node("prepare_memories", prepare_memories)
-builder.add_node("agent", call_agent)
+builder.add_node("agent", agent)
 builder.add_node("memorize_conversation", memorize_conversation)
 
 # Set the entrypoint as `agent`
