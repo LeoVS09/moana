@@ -73,6 +73,7 @@ assistent = create_react_agent(
     #  Need make them be able to do both things, say and transfer the conversation and then return back. 
     #  Also finishing covneration tool not working. 
     #  After agent say somthing graph is finished, but need find a way to call memorize_conversation at the end of the conversation
+    # example https://langchain-ai.github.io/langgraph/tutorials/multi_agent/multi-agent-collaboration/#define-agent-nodes
     tools=TOOLS + [create_handoff_tool(
         agent_name="Joker", 
         description="Before saying something to the user, ask Joker agent for a joke"
