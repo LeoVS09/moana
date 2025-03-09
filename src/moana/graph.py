@@ -18,6 +18,7 @@ from moana.configuration import Configuration
 from moana.prompts import SYSTEM_PROMPT
 from moana.tools import TOOLS
 from moana.utils import load_chat_model
+from moana.state import State
 
 # Import memory-related functionality
 from moana.memory import store, recall, memorize, checkpointer
@@ -34,7 +35,7 @@ agent = create_react_agent(
     prompt=SYSTEM_PROMPT
 )
 
-async def prepare_memories(state: MessagesState, store: BaseStore, config: RunnableConfig):
+async def prepare_memories(state: State, store: BaseStore, config: RunnableConfig):
     configuration = Configuration.from_runnable_config(config)
 
     print(state)
@@ -43,24 +44,32 @@ async def prepare_memories(state: MessagesState, store: BaseStore, config: Runna
     memory_message = await recall(configuration, state)
     print(memory_message)
     
-    # Create a new system message
-    system_msg = {"role": "system", "content": memory_message}
-
-    # Add the system message at the beginning
     return {
-        "messages": state["messages"] + [system_msg]
+        "memories": memory_message
     }
 
+def call_agent(state: State):
+    # Create a new system message with memories
+    system_msg = {"role": "system", "content": state["memories"]}
+    
+    # Prepare messages with the system message containing memories
+    agent_messages = state["messages"] + [system_msg]
+    
+    # Invoke the agent with the prepared messages
+    response = agent.invoke({"messages": agent_messages})
+    
+    # Return the updated messages
+    return {"messages": response["messages"]}
 
-def memorize_conversation(state: MessagesState):
+def memorize_conversation(state: State):
     memorize(state)
     return state
 
 # Define a new graph
-builder = StateGraph(MessagesState, config_schema=Configuration)
+builder = StateGraph(State, config_schema=Configuration)
 
 builder.add_node("prepare_memories", prepare_memories)
-builder.add_node("agent", agent)
+builder.add_node("agent", call_agent)
 builder.add_node("memorize_conversation", memorize_conversation)
 
 # Set the entrypoint as `agent`
