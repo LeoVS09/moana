@@ -2,11 +2,11 @@
 
 from typing import List, Any
 from langgraph.config import get_store
+from langgraph.graph import MessagesState
 from .long_term import memories_executor, triples_executor, profile_executor, episodes_executor
-from moana.state import State
 from moana.configuration import Configuration
 
-async def recall(configuration: Configuration, state: State) -> str:
+async def recall(configuration: Configuration, state: MessagesState) -> str:
     """Retrieve and format relevant memories.
     
     Args:
@@ -19,7 +19,7 @@ async def recall(configuration: Configuration, state: State) -> str:
     """
 
     # Retrieve relevant memories for context
-    recent_messages_content = [m.content for m in state.messages[-3:] if hasattr(m, 'content')]
+    recent_messages_content = [m.content for m in state['messages'][-3:] if hasattr(m, 'content')]
     
     # Retrieve human-readable memories, can be long and verbose, but probably have better context
     memories = await retrieve_relevant_memories(configuration.user_id, "memories", recent_messages_content, limit=3)
@@ -128,20 +128,13 @@ Result: {episode['result']}
     return result
 
 
-def memorize(state: State, system_message: str, response_content: str):
-    """Process a conversation to extract and store memories.
-    
-    Args:
-        system_message (str): The system message.
-        messages (List[Dict]): The conversation messages.
-        response_content (str): The assistant's response content.
-        delay (float): Delay in seconds before processing.
+def memorize(state: MessagesState):
+    """
+    Process a conversation to extract and store memories.
     """
     to_process = {
         "messages": [
-            {"role": "system", "content": system_message},
-            *[{"role": m.type, "content": m.content} for m in state.messages],
-            {"role": "assistant", "content": response_content},
+            *[{"role": m.type, "content": m.content} for m in state['messages']],
         ]
     }
     
