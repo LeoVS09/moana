@@ -15,6 +15,7 @@ from langgraph.graph import MessagesState
 from langgraph.store.memory import BaseStore
 
 from moana.configuration import Configuration
+from moana.prompts import SYSTEM_PROMPT
 from moana.tools import TOOLS
 from moana.utils import load_chat_model
 
@@ -29,7 +30,8 @@ agent = create_react_agent(
     tools=TOOLS,
     store=store,
     checkpointer=checkpointer,
-    config_schema=Configuration
+    config_schema=Configuration,
+    prompt=SYSTEM_PROMPT
 )
 
 async def prepare_memories(state: MessagesState, store: BaseStore, config: RunnableConfig):
@@ -38,33 +40,16 @@ async def prepare_memories(state: MessagesState, store: BaseStore, config: Runna
     print(state)
 
     # Get and format relevant memories
-    memories = await recall(configuration, state)
-
-    # Format the system prompt with memories and current time
-    system_message = configuration.system_prompt.format(
-        system_time=datetime.now(tz=timezone.utc).isoformat(),
-        user_info=memories
-    )
-
-    print(system_message)
-
-    # Check if there's already a system message and update it instead of adding a new one
-    messages = state["messages"]
+    memory_message = await recall(configuration, state)
+    print(memory_message)
     
     # Create a new system message
-    system_msg = {"role": "system", "content": system_message}
-    
-    # Check if the first message is a system message
-    if messages and hasattr(messages[0], 'type') and messages[0].type == "system":
-        # Replace the first message with our new system message
-        return {
-            "messages": [system_msg] + state["messages"][1:]
-        }
-    else:
-        # Add the system message at the beginning
-        return {
-            "messages": [system_msg] + state["messages"]
-        }
+    system_msg = {"role": "system", "content": memory_message}
+
+    # Add the system message at the beginning
+    return {
+        "messages": state["messages"] + [system_msg]
+    }
 
 
 def memorize_conversation(state: MessagesState):

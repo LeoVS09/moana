@@ -5,6 +5,11 @@ from langgraph.config import get_store
 from langgraph.graph import MessagesState
 from .long_term import memories_executor, triples_executor, profile_executor, episodes_executor
 from moana.configuration import Configuration
+from datetime import datetime, timezone
+
+MEMORY_TEMPLATE = """{memories}
+
+System time: {system_time}"""
 
 async def recall(configuration: Configuration, state: MessagesState) -> str:
     """Retrieve and format relevant memories.
@@ -33,7 +38,14 @@ async def recall(configuration: Configuration, state: MessagesState) -> str:
     # Retrieve user profile
     profile = await retrieve_user_profile(configuration.user_id)
 
-    return format_memories(memories, triples, episodes, profile)
+    memories = format_memories(memories, triples, episodes, profile)
+
+    # Format the system prompt with memories and current time
+    return MEMORY_TEMPLATE.format(
+        system_time=datetime.now(tz=timezone.utc).isoformat(),
+        memories=memories
+    )
+
 
 
 async def retrieve_relevant_memories(user_id: str, namespace: str, messages: List[str], limit: int = 10):
