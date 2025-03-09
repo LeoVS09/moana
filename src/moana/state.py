@@ -5,19 +5,19 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Sequence
 from langgraph.managed import IsLastStep, RemainingSteps
-
+from langgraph_swarm.swarm import SwarmState
 from langchain_core.messages import AnyMessage
 from langgraph.graph import MessagesState, add_messages
 from typing_extensions import Annotated
 
 
 @dataclass
-class State(MessagesState):
+class State(SwarmState):
 
     is_last_step: IsLastStep
 
     remaining_steps: RemainingSteps
-    
+
     """Represents the state of the agent, extending MessagesState with additional attributes.
 
     This class can be used to store any information needed throughout the agent's lifecycle.
