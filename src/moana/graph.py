@@ -58,8 +58,8 @@ def call_agent(state: State):
     # Invoke the agent with the prepared messages
     response = agent.invoke({"messages": agent_messages})
     
-    # Return the updated messages
-    return {"messages": response["messages"]}
+    # Add agent message as last
+    return {"messages": state["messages"] + response["messages"][-1:]}
 
 def memorize_conversation(state: State):
     memorize(state)
