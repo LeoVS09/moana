@@ -91,7 +91,7 @@ _, assistant_node = create_agent_node(
     checkpointer=checkpointer,
     state_schema=State,
     config_schema=Configuration,
-    prompt=make_prompt(SYSTEM_PROMPT, "ALLWAYS before answering to user, ask Joker for a joke on current topic"),
+    prompt=make_prompt(SYSTEM_PROMPT, "ALLWAYS before answering to user, ask Joker for a joke on current topic and when he reply rephrase joke to the user"),
     destinations=["Joker", "memorize_conversation"],
     default_destination="memorize_conversation"
 )

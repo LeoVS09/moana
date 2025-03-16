@@ -6,7 +6,7 @@ that can be used in a LangGraph.
 
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Union, cast
 
-from langchain_core.messages import AIMessage, HumanMessage, AnyMessage
+from langchain_core.messages import AIMessage, HumanMessage, AnyMessage, SystemMessage
 from langchain_core.tools import BaseTool
 from langgraph.graph import MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
@@ -82,13 +82,12 @@ def create_agent_node(
                             goto = destination
                             break
         
-        # Wrap the last message in a human message with the agent's name
+        # Add system message as last message after assistent
         # This ensures compatibility with providers that don't allow AI messages
         # at the last position of the input messages list
         if result["messages"] and isinstance(result["messages"][-1], AIMessage):
-            result["messages"][-1] = HumanMessage(
-                content=result["messages"][-1].content,
-                name=name.lower()
+            result["messages"].append(
+                SystemMessage(content=f"Agent {name} finished their turn")
             )
         
         # Return the command with the updated state and next destination
