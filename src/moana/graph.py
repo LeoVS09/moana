@@ -5,6 +5,7 @@ Works with a chat model with tool calling support.
 
 from datetime import datetime, timezone
 import os
+
 from typing import Callable, Dict, List, Literal, cast, Any, Optional
 
 from langchain_core.messages import AIMessage
@@ -25,7 +26,7 @@ from moana.prompts import SYSTEM_PROMPT
 from moana.tools import TOOLS
 from moana.utils import load_chat_model
 from moana.state import State
-from moana.agent import create_agent_node
+from moana.agent import create_agent_node, create_handoff_to_agent
 
 # Import memory-related functionality
 from moana.memory import store, recall, memorize, checkpointer
@@ -36,11 +37,8 @@ MODEL = os.environ.get("MODEL", "anthropic:claude-3-5-sonnet-latest")
 async def prepare_memories(state: State, store: BaseStore, config: RunnableConfig):
     configuration = Configuration.from_runnable_config(config)
 
-    print('prepare_memories', configuration, state)
-
     # Get and format relevant memories
     memory_message = await recall(configuration, state)
-    print('memory_message', memory_message)
     
     return {
         "memories": memory_message
@@ -76,12 +74,14 @@ def make_prompt(base_system_prompt: str, finish_system_prompt: Optional[str] = N
     
     return prepare_prompt
 
+
+
 # Create the assistant agent and node
 _, assistant_node = create_agent_node(
     model=MODEL,
     name="Assistant",
     tools=TOOLS + [
-        create_handoff_tool(
+        create_handoff_to_agent(
             agent_name="Joker", 
             description="Before saying something to the user, ask Joker agent for a joke"
         ), 
@@ -91,7 +91,7 @@ _, assistant_node = create_agent_node(
     checkpointer=checkpointer,
     state_schema=State,
     config_schema=Configuration,
-    prompt=make_prompt(SYSTEM_PROMPT, "ALLWAYS before answering to user, ask Joker for a joke on current topic and when he reply rephrase joke to the user"),
+    prompt=make_prompt(SYSTEM_PROMPT, "ALLWAYS before answering to user, ask Joker for a joke on current topic and when he reply rephrase joke to the user and continue conversation"),
     destinations=["Joker", "memorize_conversation"],
     default_destination="memorize_conversation"
 )
@@ -101,7 +101,7 @@ _, joker_node = create_agent_node(
     model=MODEL,
     name="Joker",
     tools=TOOLS + [
-        create_handoff_tool(
+        create_handoff_to_agent(
             agent_name="Assistant",
             description="After joking, transfer the conversation to the Assistant agent"
         )
