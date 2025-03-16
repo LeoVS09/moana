@@ -26,17 +26,20 @@ async def recall(configuration: Configuration, state: MessagesState) -> str:
     # Retrieve relevant memories for context
     recent_messages_content = [m.content for m in state['messages'][-3:] if hasattr(m, 'content')]
     
+
+    user_id = configuration.user_id if configuration.user_id else 'default'
+
     # Retrieve human-readable memories, can be long and verbose, but probably have better context
-    memories = await retrieve_relevant_memories(configuration.user_id, "memories", recent_messages_content, limit=3)
+    memories = await retrieve_relevant_memories(user_id, "memories", recent_messages_content, limit=3)
 
     # Retrieve machine-readable memories, can be short and concise, but probably harder to find relevant ones
-    triples = await retrieve_relevant_memories(configuration.user_id, "triples", recent_messages_content, limit=20)
+    triples = await retrieve_relevant_memories(user_id, "triples", recent_messages_content, limit=20)
 
     # Retrieve episodic memories, long and verbose, but can be usefull for reasoning
-    episodes = await retrieve_relevant_memories(configuration.user_id, "episodes", recent_messages_content, limit=1)
+    episodes = await retrieve_relevant_memories(user_id, "episodes", recent_messages_content, limit=1)
 
     # Retrieve user profile
-    profile = await retrieve_user_profile(configuration.user_id)
+    profile = await retrieve_user_profile(user_id)
 
     memories = format_memories(memories, triples, episodes, profile)
 
@@ -56,6 +59,7 @@ async def retrieve_relevant_memories(user_id: str, namespace: str, messages: Lis
         query=str(messages),
         limit=limit,
     )
+    print('memories', user_id, namespace, memories)
     return memories
 
 async def retrieve_user_profile(user_id: str) -> str:

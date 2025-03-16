@@ -5,7 +5,7 @@ Works with a chat model with tool calling support.
 
 from datetime import datetime, timezone
 import os
-from typing import Callable, Dict, List, Literal, cast, Any
+from typing import Callable, Dict, List, Literal, cast, Any, Optional
 
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
@@ -25,6 +25,7 @@ from moana.prompts import SYSTEM_PROMPT
 from moana.tools import TOOLS
 from moana.utils import load_chat_model
 from moana.state import State
+from moana.agent import create_agent_node
 
 # Import memory-related functionality
 from moana.memory import store, recall, memorize, checkpointer
@@ -35,11 +36,11 @@ MODEL = os.environ.get("MODEL", "anthropic:claude-3-5-sonnet-latest")
 async def prepare_memories(state: State, store: BaseStore, config: RunnableConfig):
     configuration = Configuration.from_runnable_config(config)
 
-    print(state)
+    print('prepare_memories', configuration, state)
 
     # Get and format relevant memories
     memory_message = await recall(configuration, state)
-    print(memory_message)
+    print('memory_message', memory_message)
     
     return {
         "memories": memory_message
@@ -59,47 +60,61 @@ def finish_conversation(tool_call_id: Annotated[str, InjectedToolCallId]):
         update={"messages": [tool_message] },
     )
 
-def make_prompt(base_system_prompt: str) -> Callable[[State, RunnableConfig], list]:
+def make_prompt(base_system_prompt: str, finish_system_prompt: Optional[str] = None) -> Callable[[State, RunnableConfig], list]:
+    additional_prompt = []
+
+    if finish_system_prompt is not None:
+        additional_prompt = [{"role": "system", "content": finish_system_prompt }]
+    
     def prepare_prompt(state: State, config: RunnableConfig):
-        return [{"role": "system", "content": base_system_prompt}, {"role": "system", "content": state["memories"]}, *state["messages"]]
+        return [
+            {"role": "system", "content": base_system_prompt}, 
+            {"role": "system", "content": state["memories"]}, 
+            *state["messages"],
+            *additional_prompt
+            ]
     
     return prepare_prompt
 
-assistent = create_react_agent(
-    MODEL,
-    name="Assistent",
-    # TODO: not working properly, each agent need choose between saying somthing or transfering the conversation to the other agent. 
-    #  As a result there no interaction between the agents. Only one agent at one turn is working
-    #  Need make them be able to do both things, say and transfer the conversation and then return back. 
-    #  Also finishing covneration tool not working. 
-    #  After agent say somthing graph is finished, but need find a way to call memorize_conversation at the end of the conversation
-    # example https://langchain-ai.github.io/langgraph/tutorials/multi_agent/multi-agent-collaboration/#define-agent-nodes
-    tools=TOOLS + [create_handoff_tool(
-        agent_name="Joker", 
-        description="Before saying something to the user, ask Joker agent for a joke"
-    ), finish_conversation], 
+# Create the assistant agent and node
+_, assistant_node = create_agent_node(
+    model=MODEL,
+    name="Assistant",
+    tools=TOOLS + [
+        create_handoff_tool(
+            agent_name="Joker", 
+            description="Before saying something to the user, ask Joker agent for a joke"
+        ), 
+        finish_conversation
+    ],
     store=store,
     checkpointer=checkpointer,
     state_schema=State,
     config_schema=Configuration,
-    prompt=make_prompt(SYSTEM_PROMPT)
+    prompt=make_prompt(SYSTEM_PROMPT, "ALLWAYS before answering to user, ask Joker for a joke on current topic"),
+    destinations=["Joker", "memorize_conversation"],
+    default_destination="memorize_conversation"
 )
 
-joker = create_react_agent(
-    MODEL,
+# Create the joker agent and node
+_, joker_node = create_agent_node(
+    model=MODEL,
     name="Joker",
-    tools=TOOLS + [create_handoff_tool(
-        agent_name="Assistent",
-        description="After joking, transfer the conversation to the Assistent agent"
-    )],
+    tools=TOOLS + [
+        create_handoff_tool(
+            agent_name="Assistant",
+            description="After joking, transfer the conversation to the Assistant agent"
+        )
+    ],
     store=store,
     checkpointer=checkpointer,
     state_schema=State,
     config_schema=Configuration,
     prompt=make_prompt('''
     You are a joker. Joke something funny and realted to the topic of the conversation. You are allowed to joke about the user, the conversation, or the topic and be toxic but funny.
-    '''
-    )
+    '''),
+    destinations=["Assistant", "memorize_conversation"],
+    default_destination="Assistant"
 )
 
 def memorize_conversation(state: State):
@@ -111,14 +126,9 @@ builder = StateGraph(State, config_schema=Configuration)
 
 builder.add_node("prepare_memories", prepare_memories)
 
-agents = [assistent, joker]
-
-for agent in agents:
-    builder.add_node(
-        agent.name,
-        agent,
-        destinations=tuple(list(get_handoff_destinations(agent)) + ["memorize_conversation"]),
-    )
+# Add agent nodes to the graph
+builder.add_node("Assistant", assistant_node, destinations=tuple(["Joker", "memorize_conversation"]))
+builder.add_node("Joker", joker_node, destinations=tuple(["Assistant", "memorize_conversation"]))
 
 builder.add_node("memorize_conversation", memorize_conversation)
 
@@ -126,13 +136,7 @@ builder.add_node("memorize_conversation", memorize_conversation)
 # This means that this node is the first one called
 builder.add_edge(START, "prepare_memories")
 
-def make_router(default_active_agent: str):
-    def route_to_active_agent(state: dict):
-        return state.get("active_agent", default_active_agent)
-    
-    return route_to_active_agent
-
-builder.add_conditional_edges("prepare_memories", make_router("Assistent"), path_map=([agent.name for agent in agents] + ["memorize_conversation"]))
+builder.add_edge("prepare_memories", "Assistant")
 
 builder.add_edge("memorize_conversation", END)
 
