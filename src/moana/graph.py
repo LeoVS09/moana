@@ -8,25 +8,16 @@ import os
 
 from typing import Callable, Dict, List, Literal, cast, Any, Optional
 
-from langchain_core.messages import AIMessage
+from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, START, END
-from langgraph.prebuilt import ToolNode, create_react_agent
-from langgraph.graph import MessagesState
 from langgraph.store.memory import BaseStore
-from langgraph_swarm import create_handoff_tool, create_swarm
-from langgraph_swarm.handoff import get_handoff_destinations
-from langchain_core.tools import BaseTool, InjectedToolCallId, tool
-from langchain_core.messages import ToolMessage
-from langgraph.types import Command
-from typing_extensions import Annotated
 
 from moana.configuration import Configuration
 from moana.prompts import SYSTEM_PROMPT
 from moana.tools import TOOLS
-from moana.utils import load_chat_model
 from moana.state import State
-from moana.agent import create_agent_node, create_handoff_to_agent
+from moana.agent import create_agent_node
 
 # Import memory-related functionality
 from moana.memory import store, recall, memorize, checkpointer
@@ -44,77 +35,86 @@ async def prepare_memories(state: State, store: BaseStore, config: RunnableConfi
         "memories": memory_message
     }
 
-@tool(description="Finish the conversation if you spoken and not need to call other agents")
-def finish_conversation(tool_call_id: Annotated[str, InjectedToolCallId]):
-    print("Finishing the conversation")
-    tool_message = ToolMessage(
-        content=f"Finishing the conversation",
-        name='finish_conversation',
-        tool_call_id=tool_call_id,
-    )
-    return Command(
-        goto='memorize_conversation',
-        graph=Command.PARENT,
-        update={"messages": [tool_message] },
-    )
 
-def make_prompt(base_system_prompt: str, finish_system_prompt: Optional[str] = None) -> Callable[[State, RunnableConfig], list]:
-    additional_prompt = []
+def make_prompt(
+        base_system_prompt: str, 
+        finish_system_prompt: Optional[str] = None, 
+        destinations: Optional[List[str]] = None,
+        include_memories: bool = True,
+        only_last_ai_message: bool = False
+    ) -> Callable[[State, RunnableConfig], list]:
+    """Create a prompt generator for the reactive agent .
+    
+    Args:
+        base_system_prompt: The base system prompt for the agent
+        finish_system_prompt: The system prompt for the agent when the conversation is finished
+        destinations: Optional list of possible agent to handoff the conversation to. The name of the agent to handoff control to, i.e.
+            the name of the agent node in the multi-agent graph.
+            Agent names should be simple, clear and unique, preferably in snake_case,
+            although you are only limited to the names accepted by LangGraph
+            nodes as well as the tool names accepted by LLM providers
+        
+    Returns:
+        A function that generates the prompt for the agent
+    """
+
+    starting_prompts = [SystemMessage(content=base_system_prompt)]
+
+    if destinations:
+        starting_prompts.append(SystemMessage(content=f"You can handoff the conversation to one of the following agents: {', '.join(destinations)}"))
+
+    ending_prompts = []
 
     if finish_system_prompt is not None:
-        additional_prompt = [{"role": "system", "content": finish_system_prompt }]
+        ending_prompts = [SystemMessage(content=finish_system_prompt)]
     
     def prepare_prompt(state: State, config: RunnableConfig):
+
+        if include_memories:
+            starting_prompts.append(SystemMessage(content=state["memories"]))
+
+        last_ai_message = None
+        for message in reversed(state["messages"]):
+            if message.type == "ai":
+                last_ai_message = message
+                break
+
+        # If it agent-to-agent communication whole dialog can confuse the model
+        # so we only include the last AI message
+        # agent usally confused when assistent ask him something, so need frame it as user question
+        middle_prompts = [HumanMessage(content=last_ai_message.content)] if only_last_ai_message else state["messages"]
+
         return [
-            {"role": "system", "content": base_system_prompt}, 
-            {"role": "system", "content": state["memories"]}, 
-            *state["messages"],
-            *additional_prompt
-            ]
+            *starting_prompts,
+            *middle_prompts,
+            *ending_prompts
+        ]
     
     return prepare_prompt
 
 
-
 # Create the assistant agent and node
-_, assistant_node = create_agent_node(
-    model=MODEL,
+assistant_node = create_agent_node(
     name="Assistant",
-    tools=TOOLS + [
-        create_handoff_to_agent(
-            agent_name="Joker", 
-            description="Before saying something to the user, ask Joker agent for a joke"
-        ), 
-        finish_conversation
-    ],
-    store=store,
-    checkpointer=checkpointer,
-    state_schema=State,
-    config_schema=Configuration,
-    prompt=make_prompt(SYSTEM_PROMPT, "ALLWAYS before answering to user, ask Joker for a joke on current topic and when he reply rephrase joke to the user and continue conversation"),
-    destinations=["Joker", "memorize_conversation"],
-    default_destination="memorize_conversation"
+    make_prompt=make_prompt(
+        SYSTEM_PROMPT, 
+        "ALLWAYS before answering to user, ask Joker for a joke on current topic and when he reply rephrase joke to the user and continue conversation",
+        ["Joker"]),
+    end_destination="memorize_conversation"
 )
 
+# TODO: need make it more generic, so new agents can be predifined or added on the fly
 # Create the joker agent and node
-_, joker_node = create_agent_node(
-    model=MODEL,
+joker_node = create_agent_node(
     name="Joker",
-    tools=TOOLS + [
-        create_handoff_to_agent(
-            agent_name="Assistant",
-            description="After joking, transfer the conversation to the Assistant agent"
-        )
-    ],
-    store=store,
-    checkpointer=checkpointer,
-    state_schema=State,
-    config_schema=Configuration,
-    prompt=make_prompt('''
-    You are a joker. Joke something funny and realted to the topic of the conversation. You are allowed to joke about the user, the conversation, or the topic and be toxic but funny.
-    '''),
-    destinations=["Assistant", "memorize_conversation"],
-    default_destination="Assistant"
+    make_prompt=make_prompt(
+        "You are a agent with name Joker! Joke something funny and realted to the topic of the conversation. You are allowed to joke about the user, the conversation, or the topic and be toxic but funny. Do what the Assistent asks you! Assistant is not your assistent, but the user's assistent.",
+        "ALLWAYS write a joke in messageToAgent field and transfering the conversation to the Assistant agent, do NOT END the conversation.",
+        ["Assistant"],
+        include_memories=False,
+        only_last_ai_message=True
+        ),
+    end_destination="memorize_conversation"
 )
 
 def memorize_conversation(state: State):
