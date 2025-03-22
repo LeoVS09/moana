@@ -7,7 +7,7 @@ that can be used in a LangGraph.
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Union, cast
 import re
 
-from langchain_core.messages import AIMessage, SystemMessage, HumanMessage, BaseMessage
+from langchain_core.messages import AIMessage, SystemMessage, HumanMessage, BaseMessage, ToolMessage
 from langchain_core.tools import BaseTool
 from langchain_core.tools import BaseTool, InjectedToolCallId, tool
 from langgraph.graph import MessagesState, StateGraph
@@ -32,7 +32,7 @@ class Handoff(BaseModel):
     
     destination: str = Field(description="The name of the agent to handoff the conversation to.")
 
-    messageToAgent: str = Field(description="Message to the agent to handoff the conversation. Question or answer depending on interaction")
+    message: str = Field(description="Message to the agent to handoff the conversation. Question or answer depending on interaction")
 
 class Action(BaseModel):
     """Action to perform."""
@@ -85,18 +85,18 @@ def create_agent_node(
             # Return the command with the updated state and finish destination
             return Command(
                 update={
-                    # Share the agent's message history with other agents
-                    "messages": [ai_message(name, output.action.response)],
+                    # Share the agent's message history with other agents and user
+                    "messages": [AIMessage(name=name, content=output.action.response)],
                 },
                 goto=end_destination,
             )
         
 
         if isinstance(output.action, Handoff):
-            response_messages = [ai_message(name, output.comment)] if output.comment else []
+            response_messages = [AIMessage(name=name, content=output.comment)] if output.comment else []
             
             response_messages = response_messages + [
-                ai_message(name, output.action.messageToAgent, output.action.destination),
+                AgentToAgentMessage(name=name, content=output.action.message, destination=output.action.destination),
                 # Add system message as last message after assistent
                 # This ensures compatibility with providers that don't allow AI messages
                 # at the last position of the input messages list
@@ -104,20 +104,52 @@ def create_agent_node(
             ]
 
             return Command(
-                update={"messages": response_messages,},
+                update={"messages": response_messages},
                 goto=output.action.destination,
             )
     
     # Return both the agent and the node function
     return agent_node 
 
+class AgentToAgentMessage(AIMessage):
 
-def ai_message(name: str, content: str, destination: Optional[str] = None) -> AIMessage:
-    """Create an AIMessage with the given name and content. If destination is provided, add it to the message."""
-    return AIMessage(
-        name=name, # Name supported not by all providers, will add it to the message
-        content=f"{name}{f' to {destination}' if destination else ''}: {content}"
-    )
+    type: Literal["agent_to_agent"] = "agent_to_agent"
+    """The type of the message (used for deserialization). Defaults to "agent_to_agent"."""
+
+    destination: Optional[str] = None
+    """The destination agent this message is intended for."""
+
+    def __init__(
+        self, content: Union[str, list[Union[str, dict]]], destination: Optional[str] = None, **kwargs: Any
+    ) -> None:
+        """Pass in content as positional arg.
+
+        Args:
+            content: The content of the message.
+            destination: The destination agent this message is intended for.
+            kwargs: Additional arguments to pass to the parent class.
+        """
+        # Set destination attribute explicitly after calling parent constructor
+        super().__init__(content=content, **kwargs)
+        self.destination = destination
+    
+    def pretty_repr(self, html: bool = False) -> str:
+        """Return a pretty representation of the message.
+
+        Args:
+            html: Whether to return an HTML-formatted string.
+                 Defaults to False.
+
+        Returns:
+            A pretty representation of the message.
+        """
+        base = super().pretty_repr(html=html)
+
+        list = base.strip().split('\n')
+
+        return (list[0] +f"\n{self.name} to {self.destination}\n" + '\n'.join(list[1:])).strip()
+
+
 
 
 def print_messages(messages: list[BaseMessage]):

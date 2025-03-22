@@ -37,11 +37,12 @@ async def prepare_memories(state: State, store: BaseStore, config: RunnableConfi
 
 
 def make_prompt(
+        name: str,
         base_system_prompt: str, 
         finish_system_prompt: Optional[str] = None, 
         destinations: Optional[List[str]] = None,
         include_memories: bool = True,
-        only_last_ai_message: bool = False
+        use_agent_message: bool = False,
     ) -> Callable[[State, RunnableConfig], list]:
     """Create a prompt generator for the reactive agent .
     
@@ -73,16 +74,16 @@ def make_prompt(
         if include_memories:
             starting_prompts.append(SystemMessage(content=state["memories"]))
 
-        last_ai_message = None
+        last_message_to_agent = None
         for message in reversed(state["messages"]):
-            if message.type == "ai":
-                last_ai_message = message
+            if message.type == "agent_to_agent" and message.destination == name:
+                last_message_to_agent = message
                 break
 
         # If it agent-to-agent communication whole dialog can confuse the model
         # so we only include the last AI message
         # agent usally confused when assistent ask him something, so need frame it as user question
-        middle_prompts = [HumanMessage(content=last_ai_message.content)] if only_last_ai_message else state["messages"]
+        middle_prompts = [HumanMessage(content=last_message_to_agent.content)] if use_agent_message else state["messages"]
 
         return [
             *starting_prompts,
@@ -97,9 +98,11 @@ def make_prompt(
 assistant_node = create_agent_node(
     name="Assistant",
     make_prompt=make_prompt(
-        SYSTEM_PROMPT, 
-        "ALLWAYS before answering to user, ask Joker for a joke on current topic and when he reply rephrase joke to the user and continue conversation",
-        ["Joker"]),
+        name="Assistant",
+        base_system_prompt=SYSTEM_PROMPT, 
+        finish_system_prompt="ALLWAYS before answering to user, ask Joker for a joke on current topic and when he reply rephrase joke to the user and continue conversation",
+        destinations=["Joker"],
+    ),
     end_destination="memorize_conversation"
 )
 
@@ -108,12 +111,13 @@ assistant_node = create_agent_node(
 joker_node = create_agent_node(
     name="Joker",
     make_prompt=make_prompt(
-        "You are a agent with name Joker! Joke something funny and realted to the topic of the conversation. You are allowed to joke about the user, the conversation, or the topic and be toxic but funny. Do what the Assistent asks you! Assistant is not your assistent, but the user's assistent.",
-        "ALLWAYS write a joke in messageToAgent field and transfering the conversation to the Assistant agent, do NOT END the conversation.",
-        ["Assistant"],
+        name="Joker",
+        base_system_prompt="You are a agent with name Joker! Joke something funny and realted to the topic of the conversation. You are allowed to joke about the user, the conversation, or the topic and be toxic but funny. Do what the user asks you!",
+        finish_system_prompt="ALLWAYS write your reply to user in 'message' field of the Handoff and transfer the conversation to the Assistant agent, do NOT END the conversation. Remember, Assistent is not your assistent, but the user's assistent.",
+        destinations=["Assistant"],
         include_memories=False,
-        only_last_ai_message=True
-        ),
+        use_agent_message=True
+    ),
     end_destination="memorize_conversation"
 )
 
