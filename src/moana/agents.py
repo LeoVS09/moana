@@ -1,6 +1,8 @@
 import os
 from praisonaiagents import Agent, Task, PraisonAIAgents
 
+from tools import internet_search_tool
+
 
 MODEL = os.getenv("MODEL")
 print('MODEL', MODEL)
@@ -13,7 +15,8 @@ researcher = Agent(
     backstory="You are an expert at a technology research group",
     verbose=True,
     llm=MODEL,
-    markdown=True
+    markdown=True,
+    tools=[internet_search_tool]
 )
 
 writer = Agent(
