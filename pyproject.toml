@@ -4,11 +4,12 @@ version = "0.1.0"
 description = "AI research project on example of the game engine"
 authors = ["leovs09 <leovs010@gmail.com>"]
 license = "GNU AGPLv3"
-requires-python = ">=3.13,<4.0"
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.13"
+praisonaiagents = "^0.0.102"
+python-dotenv = "^1.1.0"
 
 
 [build-system]

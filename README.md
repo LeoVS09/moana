@@ -46,15 +46,21 @@ Moana implements a sophisticated multi-layered memory system:
 
 ## Getting Started
 
-Assuming you have already [installed LangGraph Studio](https://github.com/langchain-ai/langgraph-studio?tab=readme-ov-file#download), to set up:
+1. Setup Poetry and environment
 
-1. Create a `.env` file.
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+# Install all dependencies (production + development)
+poetry install
+```
+
+2. Create a `.env` file.
 
 ```bash
 cp .env.example .env
 ```
 
-2. Define required API keys in your `.env` file.
+3. Define required API keys in your `.env` file.
 
 The primary [search tool](./src/moana/tools.py) used is [Tavily](https://tavily.com/). Create an API key [here](https://app.tavily.com/sign-in).
 
@@ -90,12 +96,10 @@ To use OpenAI's chat models:
 OPENAI_API_KEY=your-api-key
 ```
 
-3. Install development dependencies and start the development server:
+3. Start the development server:
 
 ```bash
-pip install --upgrade "langgraph-cli[inmem]"
-pip install -e .
-langgraph dev
+poetry run python src/moana/app.py
 ```
 
 4. Open the folder in LangGraph Studio!
@@ -119,4 +123,3 @@ While iterating on your graph, you can edit past state and rerun your app from p
 Follow up requests will be appended to the same thread. You can create an entirely new thread, clearing previous history, using the `+` button in the top right.
 
 You can find the latest documentation on [LangGraph](https://github.com/langchain-ai/langgraph) here, including examples and other references. LangGraph Studio also integrates with [LangSmith](https://smith.langchain.com/) for more in-depth tracing and collaboration with teammates.
-
