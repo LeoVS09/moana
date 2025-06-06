@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-from agents import run_agents
+from main import main
 
-run_agents()
+main()
 
 

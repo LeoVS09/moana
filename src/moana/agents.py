@@ -1,11 +1,11 @@
 import os
-from praisonaiagents import Agent, Task, PraisonAIAgents
+from praisonaiagents import Agent
 
 from tools import internet_search_tool
 
 
 MODEL = os.getenv("MODEL")
-print('MODEL', MODEL)
+print('AGENTS MODEL:', MODEL)
 
 # Create multiple agents
 researcher = Agent(
@@ -28,29 +28,3 @@ writer = Agent(
     markdown=True
 )
 
-# Define multiple tasks
-task1 = Task(
-    name="research_task",
-    description="Analyze 2024's AI advancements",
-    expected_output="A detailed report",
-    agent=researcher
-)
-
-task2 = Task(
-    name="writing_task",
-    description="Create a blog post about AI advancements",
-    expected_output="A blog post",
-    agent=writer
-)
-
-def run_agents():
-    # Run with hierarchical process
-    agents = PraisonAIAgents(
-        agents=[researcher, writer],
-        tasks=[task1, task2],
-        verbose=False,
-        process="hierarchical",
-        manager_llm=MODEL
-    )
-
-    result = agents.start()
