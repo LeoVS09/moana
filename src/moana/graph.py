@@ -69,7 +69,9 @@ def make_prompt(
         ending_prompts = [SystemMessage(content=finish_system_prompt)]
     
     def prepare_prompt(state: State, config: RunnableConfig):
-
+        
+        # TODO: combined with message history this results in memories to be dublicated starting from second interaction with agent
+        #  Need fildter out memory message that are already in the message history        
         if include_memories:
             starting_prompts.append(SystemMessage(content=state["memories"]))
 
