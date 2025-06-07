@@ -1,6 +1,6 @@
 praison:
-  process: hierarchical
-  verbose: true
+  process: sequential
+  verbose: 5
 
 start:
   content: "Start research"
@@ -12,6 +12,7 @@ agents:
     backstory: You are an expert at a technology research group
     verbose: true
     markdown: true
+    self_reflect: true
     tools:
       - internet_search_tool
   
@@ -19,7 +20,9 @@ agents:
     role: Tech Content Strategist
     goal: Craft compelling content on tech advancements
     backstory: You are a content strategist
+    verbose: true
     markdown: true
+    self_reflect: true
     tools: [] 
 
 tasks:
