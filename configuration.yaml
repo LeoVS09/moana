@@ -1,37 +1,164 @@
 praison:
-  process: sequential
+  process: workflow
   verbose: 5
 
 start:
   content: "Start research"
 
 agents:
-  - name: Researcher
-    role: Senior Research Analyst
-    goal: Uncover cutting-edge developments in AI
-    backstory: You are an expert at a technology research group
+  - name: RulesController
+    # TODO: Modify model temperature and top_p to be less creative and more predictable
+    role: Game Rules Control System
+    goal: Validate all player and NPCs actions, and other systems to be valid in terms of game rules
+    backstory: You are most critical part of the game that not allow other systems or player to break game
+    instructions: |
+      You should control basic physics, for example not allowing player to move through walls or fly if not allowed by story or player abilities.
+      You should control story rules, for example not allowing player to say that he won the game if the story is not ended yet. 
+      You should not allow game to give player or other character impossible abilities that are not justified by story or world.
+      You should control quest rules, for example not allowing player to say that he completed quest while he has not yet accomplished main objective.
+      You should control character rules, for example not allowing player to use abilities that are not allowed by story or world.
+    self_reflect: true
+
+  - name: LocalLoopProcessor
+    role: Local level Game Feedback Loop Processing System
     verbose: true
     markdown: true
     self_reflect: true
-    tools:
-      - internet_search_tool
-  
-  - name: Writer
-    role: Tech Content Strategist
-    goal: Craft compelling content on tech advancements
-    backstory: You are a content strategist
+
+  - name: QuestLoopProcessor
+    role: Quest level Game Feedback Loop Processing System
     verbose: true
     markdown: true
     self_reflect: true
-    tools: [] 
+
+  - name: GlobalLoopProcessor
+    role: Global level Game Feedback Loop Processing System
+    verbose: true
+    markdown: true
+    self_reflect: true
+
+  - name: CharacterLoopProcessor
+    role: Character level Game Feedback Loop Processing System
+    verbose: true
+    markdown: true
+    self_reflect: true
+
+  - name: GameDifficultyCorrector
+    role: Game Difficulty Correction System
+    verbose: true
+    markdown: true
+    self_reflect: true
+
+  - name: InterfaceWriter
+    role: Writer of User Interface in Text-based Game
+    instructions: |
+      You responsible for properly writing to user results of the next turn processing in text-based game
+      Esentially you build user interface from text, according to requirements.
+      You should focus on making beutiful scenes and characters descriptions.
+      Keep dialogs and reply from NPCs interesting to read.
+      Avoid making any changes or improvements to the the text that can change meaning of dialogs or scene/NPCs characterestics. 
+      You should trust other game systems as a source of truth!
+    verbose: true
+    markdown: true
+    self_reflect: true
 
 tasks:
-  - name: research_task
-    description: Analyze 2024's AI advancements
-    expected_output: A detailed report
-    agent: Researcher
+  - name: player_action_validation
+    description: |
+      Analyse and validate player input and decide whether it valid in game terms or invalid. 
+      Player can choose next action or dialog option from presented or write own choice. 
+      Player not limited by suggested actions, he can say anything and do anything if it is in game rules.
+    expected_output: Action validation desision
+    is_start: true
+    agent: RulesController
+    task_type: decision
+    next_tasks:
+      - explain_error_to_user
+      - process_local_loop
+    condition:
+      valid: 
+        - process_local_loop
+      invalid: 
+        - explain_error_to_user
+
+  - name: explain_error_to_user
+    description: Explain to user what action cannot be done and why
+    expected_output: A detailed explanation
+    agent: InterfaceWriter
+    context:
+      - player_action_validation
   
-  - name: writing_task
-    description: Create a blog post about AI advancements
-    expected_output: A blog post
-    agent: Writer 
+  - name: process_local_loop
+    expected_output: Results of player action that affect local environment/scene/characters
+    agent: LocalLoopProcessor
+    context:
+      - game_feedback_validation
+    next_tasks:
+      - process_quest_loop
+
+  - name: process_quest_loop
+    expected_output: Results of player action and Local Feedback Loop that affect quest, no effect is also valid output.
+    agent: QuestLoopProcessor
+    context:
+      - game_feedback_validation
+      - process_local_loop
+    next:
+      - process_global_loop
+
+  - name: process_global_loop
+    expected_output: Results of player action, Local and Quest Feedback Loop that have global effect, no effect is also valid output.
+    agent: GlobalLoopProcessor
+    context:
+      - game_feedback_validation
+      - process_local_loop
+      - process_quest_loop
+    next:
+      - process_character_loop
+
+  - name: process_character_loop
+    expected_output: Results of player action and Local, Quest, Global Feedback Loop that have effect on character, no effect is also valid output.
+    agent: CharacterLoopProcessor
+    context:
+      - game_feedback_validation
+      - process_local_loop
+      - process_quest_loop
+      - process_global_loop
+    next:
+      - correct_game_difficulty
+
+  - name: correct_game_difficulty
+    expected_output: Correction of Local, Quest, Global and Character Feedback Loop in terms based on game difficulty, no correction is also valid output.
+    agent: GameDifficultyCorrector
+    context:
+      - game_feedback_validation
+      - process_local_loop
+      - process_quest_loop
+      - process_global_loop
+      - correct_game_difficulty
+    next:
+      - game_feedback_validation
+
+  - name: game_feedback_validation
+    description: |
+      Analyse and validate game turn feedback and decide whether it valid in game terms or invalid. 
+    expected_output: Game loop feedback validation desision
+    agent: RulesController
+    task_type: decision
+    next_tasks:
+      - write_reply_to_user
+      - process_local_loop
+    condition:
+      valid: 
+        - write_reply_to_user
+      invalid: 
+        - process_local_loop
+
+  - name: write_reply_to_user
+    description: |
+      Present to player result of next turn processing of the game engine based on this template:
+
+      - Beautifully describe scene in details, including all objects, characters, weapons, and results of the actions that happened in this scene.
+      - Describe characters actions or dialogs that happened in this scene.
+      - In-game AI character should suggest potential actions that player can do or dialog options that player can say.
+    expected_output: Beautifully written reply to the user
+    agent: InterfaceWriter 
