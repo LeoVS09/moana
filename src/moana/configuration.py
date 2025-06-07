@@ -25,12 +25,25 @@ class TaskConfig(BaseModel):
     expected_output: str
     agent: str  # Agent name reference
 
+class PraisonConfig(BaseModel):
+    """Praison configuration with manual YAML loading."""
+    model_config = ConfigDict(extra='allow')
+    
+    process: str = "sequential"
+
+class StartConfig(BaseModel):
+    """Start configuration with manual YAML loading."""
+    model_config = ConfigDict(extra='allow')
+    
+    content: str = None
 
 class Configuration(BaseModel):
     """Application configuration with manual YAML loading."""
     
+    praison: PraisonConfig = PraisonConfig()
     agents: List[AgentConfig] = []
     tasks: List[TaskConfig] = []
+    start: StartConfig = StartConfig()
 
 
 def load_configuration() -> Configuration:

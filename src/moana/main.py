@@ -2,6 +2,7 @@ import os
 from praisonaiagents import PraisonAIAgents
 from agents import get_agents
 from tasks import get_tasks
+from configuration import config
 
 MODEL = os.getenv("MODEL")
 MANAGER_MODEL = os.getenv("MANAGER_MODEL", MODEL)
@@ -15,9 +16,11 @@ def main():
     agents = PraisonAIAgents(
         agents=agents_list,
         tasks=tasks_list,
-        verbose=False,
-        process="hierarchical",
-        manager_llm=MANAGER_MODEL
+        manager_llm=MANAGER_MODEL,
+        **config.praison.model_dump()
     )
 
-    result = agents.start()
+    start_config = config.start.model_dump()
+    print('START CONFIG:', start_config)
+    result = agents.start(**start_config)
+    print('RESULT:', result)

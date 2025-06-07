@@ -1,3 +1,10 @@
+praison:
+  process: hierarchical
+  verbose: true
+
+start:
+  content: "Start research"
+
 agents:
   - name: Researcher
     role: Senior Research Analyst
