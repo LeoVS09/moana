@@ -22,6 +22,8 @@ def create_task_from_config(task_config: TaskConfig, get_agent) -> Task:
     # Add our processed special fields
     config_dict['agent'] = agent
 
+    # TODO: Modify context so it will include real tasks objects instead of names
+    # Usage example:https://docs.praison.ai/docs/features/autonomous-workflow
     task = Task(**config_dict)
     print('TASK:', task.name)
     
