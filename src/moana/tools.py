@@ -15,3 +15,17 @@ def internet_search_tool(query: str) -> List[Dict]:
             "snippet": result.get("body", "")
         })
     return results
+
+
+# Tool mapping for dynamic tool assignment
+AVAILABLE_TOOLS = {
+    "internet_search_tool": internet_search_tool
+}
+
+
+def get_tools_from_names(tool_names: List[str]) -> List:
+    """Convert tool names to actual tool objects with early return for empty list."""
+    if not tool_names:
+        return []
+    
+    return [AVAILABLE_TOOLS[name] for name in tool_names if name in AVAILABLE_TOOLS]

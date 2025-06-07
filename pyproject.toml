@@ -11,6 +11,7 @@ python = "^3.13"
 praisonaiagents = "^0.0.102"
 python-dotenv = "^1.1.0"
 duckduckgo-search = "^8.0.2"
+pyyaml = "^6.0.2"
 
 
 [build-system]

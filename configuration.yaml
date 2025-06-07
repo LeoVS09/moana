@@ -1,0 +1,16 @@
+agents:
+  - name: Researcher
+    role: Senior Research Analyst
+    goal: Uncover cutting-edge developments in AI
+    backstory: You are an expert at a technology research group
+    verbose: true
+    markdown: true
+    tools:
+      - internet_search_tool
+  
+  - name: Writer
+    role: Tech Content Strategist
+    goal: Craft compelling content on tech advancements
+    backstory: You are a content strategist
+    markdown: true
+    tools: [] 
