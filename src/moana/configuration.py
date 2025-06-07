@@ -1,6 +1,7 @@
 import yaml
 from typing import List
 from pydantic import BaseModel, ConfigDict
+from pprint import pprint
 
 
 class AgentConfig(BaseModel):
@@ -14,10 +15,22 @@ class AgentConfig(BaseModel):
     tools: List[str] = []
 
 
+class TaskConfig(BaseModel):
+    """Flexible task configuration that accepts any Task properties."""
+    model_config = ConfigDict(extra='allow')
+    
+    # Required fields
+    name: str
+    description: str
+    expected_output: str
+    agent: str  # Agent name reference
+
+
 class Configuration(BaseModel):
     """Application configuration with manual YAML loading."""
     
     agents: List[AgentConfig] = []
+    tasks: List[TaskConfig] = []
 
 
 def load_configuration() -> Configuration:
@@ -36,4 +49,4 @@ def load_configuration() -> Configuration:
     
 
 config = load_configuration()
-print('CONFIG:', config)
+pprint(config.model_dump(), width=80, depth=10)

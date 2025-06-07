@@ -14,3 +14,14 @@ agents:
     backstory: You are a content strategist
     markdown: true
     tools: [] 
+
+tasks:
+  - name: research_task
+    description: Analyze 2024's AI advancements
+    expected_output: A detailed report
+    agent: Researcher
+  
+  - name: writing_task
+    description: Create a blog post about AI advancements
+    expected_output: A blog post
+    agent: Writer 
