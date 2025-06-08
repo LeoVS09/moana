@@ -2,7 +2,7 @@ praison:
   process: workflow
   verbose: 5
 
-start:
+message:
   content: |
     **TURN 1**
     
@@ -320,10 +320,10 @@ tasks:
     task_type: decision
     next_tasks:
       - explain_error_to_user
-      - process_local_loop
+      - process_global_loop
     condition:
       valid: 
-        - process_local_loop
+        - process_global_loop
       invalid: 
         - explain_error_to_user
 

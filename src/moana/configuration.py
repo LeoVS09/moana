@@ -1,5 +1,5 @@
 import yaml
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 from pprint import pprint
 
@@ -31,11 +31,11 @@ class PraisonConfig(BaseModel):
     
     process: str = "sequential"
 
-class StartConfig(BaseModel):
-    """Start configuration with manual YAML loading."""
+class MessageConfig(BaseModel):
+    """User message configuration."""
     model_config = ConfigDict(extra='allow')
     
-    content: str = None
+    content: Optional[str | object] = None
 
 class Configuration(BaseModel):
     """Application configuration with manual YAML loading."""
@@ -43,7 +43,7 @@ class Configuration(BaseModel):
     praison: PraisonConfig = PraisonConfig()
     agents: List[AgentConfig] = []
     tasks: List[TaskConfig] = []
-    start: StartConfig = StartConfig()
+    message: Optional[MessageConfig] = MessageConfig()
 
 
 def load_configuration() -> Configuration:

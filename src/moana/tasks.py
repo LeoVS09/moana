@@ -1,10 +1,10 @@
 from typing import List, Dict, Optional, Tuple
 from praisonaiagents import Task
 
-from configuration import TaskConfig
+from configuration import TaskConfig, MessageConfig
 
 
-def build_tasks(tasks_config: List[TaskConfig], get_agent) -> Tuple[List[Task], Dict[str, Task]]:
+def build_tasks(message: MessageConfig, tasks_config: List[TaskConfig], get_agent) -> Tuple[List[Task], Dict[str, Task]]:
     """Build tasks."""
     tasks_list = []
     tasks_dict = {}
@@ -25,9 +25,14 @@ def build_tasks(tasks_config: List[TaskConfig], get_agent) -> Tuple[List[Task], 
         config_dict['agent'] = agent
 
         context_names = config_dict.pop('context', [])
+        # TODO: modify context after task creation to resolvecurcular dependencies
+        # example https://github.com/MervinPraison/PraisonAI/blob/main/src/praisonai/praisonai/agents_generator.py#L620
         if len(context_names) > 0:
             context = [tasks_dict[name] for name in context_names]
             config_dict['context'] = context
+
+        if message and message.content:
+            config_dict['description'] = config_dict['description'] + "\nUser Message: " + message.content
 
         task = Task(**config_dict)
         print('TASK:', task.name, task.context)
