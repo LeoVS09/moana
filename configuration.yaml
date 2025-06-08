@@ -341,12 +341,20 @@ tasks:
 
   - name: process_global_loop
     description: |
-      Assess global story impact of player actions results.
-      Manage world-wide events, story progression, and major narrative developments.
-      Consider current quest context, local scene and world state when determining feedback effects.
-      Evaluate whether events should trigger global consequences or story changes.
-      Balance predetermined story beats with reactive elements based on significant player actions.
-    expected_output: Results of player action that have global effect, no effect is also valid output.
+      # Task Instructions
+      
+      1. Summaraize and write global story prior to current action point
+      2. Assess global story impact of player actions and write list of potential effects on global story (no effects at all is valid output!). Consider current quest context, local scene and world state when determining feedback effects.
+      3. If there potential effects on global story do next:
+        a. Pick 1-3 potential effects to be applied. Evaluate whether events should trigger global consequences or story changes.
+        b. Apply effects on story and describe 3 complitely different variants of events that should happen. 
+        c. Pick best variant of next events and write potential story progression for 4 steps in advance. 
+      
+      # During Reflection Stage
+      Assess that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
+      Manage world-wide events, story progression, and major narrative developments in a way that story be enough unpredictable, but still coherent.
+
+    expected_output: Global story prior to current action point, applied effects and next story event for 3 steps in advance, no effect is also valid output.
     agent: GlobalLoopProcessor
     next_tasks:
       - process_quest_loop
@@ -364,25 +372,8 @@ tasks:
     context:
       - process_global_loop
     next_tasks:
-      - process_local_loop
-    output_file: .debug/process_quest_loop.md
-
-  - name: process_local_loop
-    description: |
-      Process immediate environmental and local area reactions to player actions.
-      Handle effects of global and quest feedback loops.
-      Handle direct consequences, rewards, penalties, and environmental changes in the current scene.
-      Consider current quest context and world state when determining local feedback effects.
-      Generate immediate cause-and-effect relationships that enhance immersion and game world believability.
-    expected_output: Results of player action that affect local environment/scene/characters
-    agent: LocalLoopProcessor
-    retain_full_context: true
-    context:
-      - process_global_loop
-      - process_quest_loop
-    next_tasks:
       - process_character_loop
-    output_file: .debug/process_local_loop.md
+    output_file: .debug/process_quest_loop.md
 
   - name: process_character_loop
     description: |
@@ -394,27 +385,55 @@ tasks:
     agent: CharacterLoopProcessor
     retain_full_context: true
     context:
-      - process_local_loop
-      - process_quest_loop
       - process_global_loop
+      - process_quest_loop
     next_tasks:
-      - correct_game_difficulty
+      - process_local_loop
     output_file: .debug/process_character_loop.md
 
+  - name: process_local_loop
+    description: |
+      Process immediate environmental and local area reactions to player actions.
+      Handle effects of global and quest feedback loops.
+      Handle direct consequences, rewards, penalties, and environmental changes in the current scene.
+      Consider current quest context and world state when determining local feedback effects.
+      Generate immediate cause-and-effect relationships that enhance immersion and game world believability.
+      Do not assume next player actions! Only apply what player have decided to do and describe state of scene after that.
+      Do not reval to player potential events of story that he not yet reached.
+    expected_output: Description of next state of scene after appliyng player action 
+    agent: LocalLoopProcessor
+    retain_full_context: true
+    context:
+      - process_global_loop
+      - process_quest_loop
+      - process_character_loop
+    next_tasks:
+      - correct_game_difficulty
+    output_file: .debug/process_local_loop.md
+
+    # TODO: Need add this game dificulty correction to be part of each loop self-reflection
   - name: correct_game_difficulty
     description: |
       Analyze current game state and player performance to adjust difficulty dynamically.
       Apply both direct and indirect difficulty corrections to maintain optimal challenge and engagement.
       Ensure difficulty changes are story-justified and feel natural within the game world.
       Balance challenge with appropriate relief periods to maintain player engagement and prevent frustration.
-    expected_output: Correction of Local, Quest, Global and Character Feedback Loop in terms based on game difficulty, no correction is also valid output.
+
+      # Instructions
+      1. Write list of potential corrections to newly decsribed scene according to requirements for each loop (Global, Quest, Local, Character). No corrections is also valid result.
+      2. 
+        a. If there any corrections apply them and rewrite Local loop scene description according to them
+        b. If there no corrections just rewrite local loop scene description exactly same way as it was
+
+      Importnat: Do not assume next player actions, only correct description of scene done by Local Loop. What player will do next, he will decide on his own!
+    expected_output: List of potential corrections, and description of state of scene after applied correction, or same scene as it was described by Local Loop.
     agent: GameDifficultyCorrector
     retain_full_context: true
     context:
-      - process_local_loop
-      - process_quest_loop
       - process_global_loop
+      - process_quest_loop
       - process_character_loop
+      - process_local_loop
     next_tasks:
       - game_feedback_validation
     output_file: .debug/correct_game_difficulty.md
@@ -430,24 +449,20 @@ tasks:
     task_type: decision
     retain_full_context: true
     context:
-      - process_local_loop
-      - process_quest_loop
-      - process_global_loop
-      - process_character_loop
       - correct_game_difficulty
     next_tasks:
       - write_reply_to_user
-      - process_local_loop
+      - process_global_loop
     condition:
       valid: 
         - write_reply_to_user
       invalid: 
-        - process_local_loop
+        - process_global_loop
     output_file: .debug/game_feedback_validation.md
 
   - name: write_reply_to_user
     description: |
-      Present to player result of next turn processing of the game engine based on this template:
+      Present to player state of scene after processing turn by previus game systems:
 
       - Beautifully describe scene in details, including all objects, characters, weapons, and results of the actions that happened in this scene.
       - Describe characters actions or dialogs that happened in this scene.
@@ -455,14 +470,13 @@ tasks:
       
       Create immersive, engaging prose that brings the validated game state to life for the player.
       Maintain consistent tone and style while accurately representing all game system outputs.
-      Provide clear, interesting options for player's next action while not limiting their creative freedom.
+      Provide clear, interesting options for player's next action while not limiting their creative freedom. Actions should come from In-game AI as just a replic.
+      Do not assume next player actions! Only rewrite results of previus task processing in engaging way. 
+      Do not shorten or summaraize scene/dialogs decsribed by previus processing.
     expected_output: Beautifully written reply to the user
     agent: InterfaceWriter
     retain_full_context: true
     context:
       - process_local_loop
-      - process_quest_loop
-      - process_global_loop
-      - process_character_loop
       - correct_game_difficulty 
     output_file: .debug/write_reply_to_user.md
