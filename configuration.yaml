@@ -419,7 +419,6 @@ tasks:
     agent: RulesController
     task_type: decision
     context:
-      - game_feedback_validation
       - process_local_loop
       - process_quest_loop
       - process_global_loop
@@ -448,7 +447,6 @@ tasks:
     expected_output: Beautifully written reply to the user
     agent: InterfaceWriter
     context:
-      - game_feedback_validation
       - process_local_loop
       - process_quest_loop
       - process_global_loop

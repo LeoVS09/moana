@@ -1,7 +1,7 @@
 import os
 from praisonaiagents import PraisonAIAgents
 from agents import get_agents
-from tasks import get_tasks
+from tasks import build_tasks
 from configuration import config
 
 MODEL = os.getenv("MODEL")
@@ -10,7 +10,7 @@ print('MANAGER MODEL:', MANAGER_MODEL)
 
 def main():
     agents_list, agents_dict, get_agent = get_agents()
-    tasks_list, tasks_dict, get_task = get_tasks(get_agent)
+    tasks_list, tasks_dict = build_tasks(config.tasks, get_agent)
 
     # Run with hierarchical process
     agents = PraisonAIAgents(
