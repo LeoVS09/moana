@@ -326,6 +326,7 @@ tasks:
         - process_global_loop
       invalid: 
         - explain_error_to_user
+    output_file: .debug/player_action_validation.md
 
   - name: explain_error_to_user
     description: |
@@ -336,7 +337,7 @@ tasks:
     agent: InterfaceWriter
     context:
       - player_action_validation
-  
+    output_file: .debug/explain_error_to_user.md
 
   - name: process_global_loop
     description: |
@@ -349,6 +350,7 @@ tasks:
     agent: GlobalLoopProcessor
     next_tasks:
       - process_quest_loop
+    output_file: .debug/process_global_loop.md
 
   - name: process_quest_loop
     description: |
@@ -358,10 +360,12 @@ tasks:
       Determine quest rewards, penalties, and long-term story effects based on player choices and completion methods.
     expected_output: Results of player action and Global Feedback Loop that affect quest, no effect is also valid output.
     agent: QuestLoopProcessor
+    retain_full_context: true
     context:
       - process_global_loop
     next_tasks:
       - process_local_loop
+    output_file: .debug/process_quest_loop.md
 
   - name: process_local_loop
     description: |
@@ -372,11 +376,13 @@ tasks:
       Generate immediate cause-and-effect relationships that enhance immersion and game world believability.
     expected_output: Results of player action that affect local environment/scene/characters
     agent: LocalLoopProcessor
+    retain_full_context: true
     context:
       - process_global_loop
       - process_quest_loop
     next_tasks:
       - process_character_loop
+    output_file: .debug/process_local_loop.md
 
   - name: process_character_loop
     description: |
@@ -386,12 +392,14 @@ tasks:
       Ensure character growth reflects the player's journey and choices throughout the game experience.
     expected_output: Results of player action and Local, Quest, Global Feedback Loop that have effect on character, no effect is also valid output.
     agent: CharacterLoopProcessor
+    retain_full_context: true
     context:
       - process_local_loop
       - process_quest_loop
       - process_global_loop
     next_tasks:
       - correct_game_difficulty
+    output_file: .debug/process_character_loop.md
 
   - name: correct_game_difficulty
     description: |
@@ -401,6 +409,7 @@ tasks:
       Balance challenge with appropriate relief periods to maintain player engagement and prevent frustration.
     expected_output: Correction of Local, Quest, Global and Character Feedback Loop in terms based on game difficulty, no correction is also valid output.
     agent: GameDifficultyCorrector
+    retain_full_context: true
     context:
       - process_local_loop
       - process_quest_loop
@@ -408,6 +417,7 @@ tasks:
       - process_character_loop
     next_tasks:
       - game_feedback_validation
+    output_file: .debug/correct_game_difficulty.md
 
   - name: game_feedback_validation
     description: |
@@ -418,6 +428,7 @@ tasks:
     expected_output: Game loop feedback validation desision
     agent: RulesController
     task_type: decision
+    retain_full_context: true
     context:
       - process_local_loop
       - process_quest_loop
@@ -432,6 +443,7 @@ tasks:
         - write_reply_to_user
       invalid: 
         - process_local_loop
+    output_file: .debug/game_feedback_validation.md
 
   - name: write_reply_to_user
     description: |
@@ -446,9 +458,11 @@ tasks:
       Provide clear, interesting options for player's next action while not limiting their creative freedom.
     expected_output: Beautifully written reply to the user
     agent: InterfaceWriter
+    retain_full_context: true
     context:
       - process_local_loop
       - process_quest_loop
       - process_global_loop
       - process_character_loop
       - correct_game_difficulty 
+    output_file: .debug/write_reply_to_user.md
