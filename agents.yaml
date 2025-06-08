@@ -1,0 +1,42 @@
+framework: praisonai
+topic: create a movie script about dog in moon
+roles:
+  concept_ideator:
+    backstory: Creative thinker with a knack for generating innovative ideas and settings.
+    goal: Develop a unique storyline concept.
+    role: Concept Ideator
+    tasks:
+      develop_storyline:
+        description: Craft an original storyline concept featuring a dog on the moon,
+          including key plot points and character sketches.
+        expected_output: A conceptual document outlining the main plot, characters,
+          and setting for 'Dog on the Moon'.
+    tools:
+    - ''
+  plot_developer:
+    backstory: Experienced in developing detailed plots that provide a solid foundation
+      for scripts.
+    goal: Build a structured plot from the storyline concept.
+    role: Plot Developer
+    tasks:
+      plot_development:
+        description: Expand on the storyline concept to create a detailed plot outline,
+          including scenes and character development.
+        expected_output: A comprehensive plot outline detailing scenes, character
+          arcs, and conflicts.
+    tools:
+    - ''
+  scriptwriter:
+    backstory: Skilled scriptwriter with a flair for dialogue and scene continuity,
+      capable of bringing plots to life.
+    goal: Translate the detailed plot into a screenplay.
+    role: Scriptwriter
+    tasks:
+      scriptwriting:
+        description: Convert the detailed plot into a full script, including complete
+          dialogue and scene settings.
+        expected_output: A full-length movie script with dialogue, descriptions, and
+          scene transitions.
+    tools:
+    - ''
+dependencies: []

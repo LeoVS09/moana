@@ -64,15 +64,11 @@ cp .env.example .env
 
 The primary [search tool](./src/moana/tools.py) used is [Tavily](https://tavily.com/). Create an API key [here](https://app.tavily.com/sign-in).
 
-### Setup Model
+### Run Praison
 
-The defaults values for `model` are shown below:
-
-```yaml
-model: anthropic/claude-3-5-sonnet-20240620
+```bash
+praisonai
 ```
-
-Follow the instructions below to get set up, or pick one of the additional options.
 
 #### Anthropic
 
@@ -123,3 +119,13 @@ While iterating on your graph, you can edit past state and rerun your app from p
 Follow up requests will be appended to the same thread. You can create an entirely new thread, clearing previous history, using the `+` button in the top right.
 
 You can find the latest documentation on [LangGraph](https://github.com/langchain-ai/langgraph) here, including examples and other references. LangGraph Studio also integrates with [LangSmith](https://smith.langchain.com/) for more in-depth tracing and collaboration with teammates.
+
+
+### Known Issues
+
+### squlite3 version mistmatch
+
+Follow [this instructions](https://stackoverflow.com/questions/55508830/how-to-upgrade-sqlite-3-8-2-to-3-8-3) and then active virtual env
+```bash
+source ./.venv/bin/activate
+```
