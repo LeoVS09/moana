@@ -89,6 +89,8 @@ agents:
     verbose: true
     markdown: true
     self_reflect: true
+    reflect: |      
+      Critical: Do not assume player actions prior completition, for example if player running into the room with bomb, he can decide to disarm or run away in next turn. If any player actions is assumed, than response definetly NOT satisfactory
 
   - name: QuestLoopProcessor
     role: Quest level Game Feedback Loop Processing System
@@ -183,13 +185,13 @@ agents:
       Control the progression and difficulty of long-lasting questlines based on player choices and story advancement.
       Ensure global events provide appropriate context and justification for changes in local difficulty and challenges.
       Maintain narrative consistency across all story elements while allowing for meaningful player influence.
+      Assess that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
+      Manage world-wide events, story progression, and major narrative developments in a way that story be enough unpredictable, but still coherent.
     verbose: true
     markdown: true
     self_reflect: true
     reflect: |
-      Assess that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
-      Manage world-wide events, story progression, and major narrative developments in a way that story be enough unpredictable, but still coherent.
-      Important: Do not assume player actions prior completition, for example if player running into the room with bomb, he can decide to disarm or run away in next turn
+      Critical: Do not assume player actions prior completition, for example if player running into the room with bomb, he can decide to disarm or run away in next turn. If any player actions is assumed, than response definetly NOT satisfactory
 
 
   - name: CharacterLoopProcessor
@@ -310,6 +312,11 @@ agents:
     verbose: true
     markdown: true
     self_reflect: true
+    reflect: |
+      Critical Requirements:
+      Actions should come from In-game AI as just a plain replic. For example, "Commander, I suggest to approach the main entrance and attempt to override the airlock controls or we can take more careful approach and Circle the facility to look for alternative entry points". There no need for many suggestions, just 2-3 will ber enough
+      Do not assume next player actions! Only rewrite results of previus task processing in engaging way. 
+      Do not shorten or summaraize scene/dialogs decsribed by previus processing.
 
 tasks:
   - name: player_action_validation
@@ -362,6 +369,7 @@ tasks:
       Scaning flyting space ship -> Discovering that ship have multiple humanoids live-forms, discovering that ship not have organinc live-forms, failed to scan due to ship shields
       Player approach unknown entity -> He discorvers that this entity is long missing friend that mutating under some virus, he discorvers that entity is hologram that disapears, he discovers that it dying girl that need help
     
+      Be sure that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
     expected_output: Global story prior to current action point, applied effects, potential events, choosed event, no effect is also valid output.
     agent: StoryLoopProcessor
     next_tasks:
@@ -406,8 +414,7 @@ tasks:
       Handle direct consequences, rewards, penalties, and environmental changes in the current scene.
       Consider current quest context and world state when determining local feedback effects.
       Generate immediate cause-and-effect relationships that enhance immersion and game world believability.
-      
-      IMPORTANT: Do not assume next player actions or replics! Only apply what player have decided to do and describe state of scene. Do not reval to player potential events of story that he not yet reached.
+      Be sure that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
     expected_output: Description of next state of scene after appliyng player action 
     agent: LocalLoopProcessor
     retain_full_context: true
@@ -474,9 +481,7 @@ tasks:
       
       Create immersive, engaging prose that brings the validated game state to life for the player.
       Maintain consistent tone and style while accurately representing all game system outputs.
-      Provide clear, interesting options for player's next action while not limiting their creative freedom. Actions should come from In-game AI as just a replic.
-      Do not assume next player actions! Only rewrite results of previus task processing in engaging way. 
-      Do not shorten or summaraize scene/dialogs decsribed by previus processing.
+      Provide clear, interesting options for player's next action while not limiting their creative freedom. 
     expected_output: Beautifully written reply to the user
     agent: InterfaceWriter
     retain_full_context: true
