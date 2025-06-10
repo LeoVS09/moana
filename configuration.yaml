@@ -153,8 +153,8 @@ agents:
     markdown: true
     self_reflect: true
 
-  - name: GlobalLoopProcessor
-    role: Global level Game Feedback Loop Processing System
+  - name: StoryLoopProcessor
+    role: Story level Game Feedback Loop Processing System
     goal: Control world-wide story progression, major events, and long-term consequences that shape the overall game narrative
     backstory: |
       You are the master storyteller responsible for the grand narrative arc. 
@@ -162,9 +162,9 @@ agents:
       ensuring that while these events are driven by overarching story needs, 
       they still respond meaningfully to the player's significant actions and choices.
 
-      # Global Feedback Loop
+      # Story Feedback Loop
       
-      World and global story progression. This is feedback loop that should move story forward and control when new events occur. 
+      World and story progression. This is feedback loop that should move story forward and control when new events occur. 
       Events that have effect on whole world and not limited by a player character, 
       such alien invason or rouge AI breakthrough and simular. It should react to player actions, 
       but mainly be controlled by global story. Player should be hard to affect this loop, but still possible. 
@@ -320,10 +320,10 @@ tasks:
     task_type: decision
     next_tasks:
       - explain_error_to_user
-      - process_global_loop
+      - process_story_loop
     condition:
       valid: 
-        - process_global_loop
+        - process_story_loop
       invalid: 
         - explain_error_to_user
     output_file: .debug/player_action_validation.md
@@ -339,7 +339,7 @@ tasks:
       - player_action_validation
     output_file: .debug/explain_error_to_user.md
 
-  - name: process_global_loop
+  - name: process_story_loop
     description: |
       # Task Instructions
       
@@ -357,46 +357,46 @@ tasks:
       Scaning flyting space ship -> Discovering that ship have multiple humanoids live-forms, discovering that ship not have organinc live-forms, failed to scan due to ship shields
       Player approach unknown entity -> He discorvers that this entity is long missing friend that mutating under some virus, he discorvers that entity is hologram that disapears, he discovers that it dying girl that need help
     
-    reflection: |
-      Assess that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
-      Manage world-wide events, story progression, and major narrative developments in a way that story be enough unpredictable, but still coherent.
+    # reflection: |
+    #   Assess that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
+    #   Manage world-wide events, story progression, and major narrative developments in a way that story be enough unpredictable, but still coherent.
 
     expected_output: Global story prior to current action point, applied effects, potential events, choosed event, no effect is also valid output.
-    agent: GlobalLoopProcessor
-    next_tasks:
-      - process_quest_loop
-    output_file: .debug/process_global_loop.md
-
-  - name: process_quest_loop
-    description: |
-      Evaluate how player actions and global loop results affect active quests and quest progression.
-      Update quest objectives, handle quest completion or failure states, and manage quest-related consequences.
-      Process autonomous quest progression for quests not directly addressed by player actions.
-      Determine quest rewards, penalties, and long-term story effects based on player choices and completion methods.
-    expected_output: Results of player action and Global Feedback Loop that affect quest, no effect is also valid output.
-    agent: QuestLoopProcessor
-    retain_full_context: true
-    context:
-      - process_global_loop
-    next_tasks:
-      - process_character_loop
-    output_file: .debug/process_quest_loop.md
-
-  - name: process_character_loop
-    description: |
-      Process character development and progression based on all feedback loop results.
-      Update character abilities, traits, and progression based on story events and player choices.
-      Handle story-integrated character rewards and development opportunities.
-      Ensure character growth reflects the player's journey and choices throughout the game experience.
-    expected_output: Results of player action and Local, Quest, Global Feedback Loop that have effect on character, no effect is also valid output.
-    agent: CharacterLoopProcessor
-    retain_full_context: true
-    context:
-      - process_global_loop
-      - process_quest_loop
+    agent: StoryLoopProcessor
     next_tasks:
       - process_local_loop
-    output_file: .debug/process_character_loop.md
+    output_file: .debug/process_story_loop.md
+
+  # - name: process_quest_loop
+  #   description: |
+  #     Evaluate how player actions and global loop results affect active quests and quest progression.
+  #     Update quest objectives, handle quest completion or failure states, and manage quest-related consequences.
+  #     Process autonomous quest progression for quests not directly addressed by player actions.
+  #     Determine quest rewards, penalties, and long-term story effects based on player choices and completion methods.
+  #   expected_output: Results of player action and Global Feedback Loop that affect quest, no effect is also valid output.
+  #   agent: QuestLoopProcessor
+  #   retain_full_context: true
+  #   context:
+  #     - process_story_loop
+  #   next_tasks:
+  #     - process_character_loop
+  #   output_file: .debug/process_quest_loop.md
+
+  # - name: process_character_loop
+  #   description: |
+  #     Process character development and progression based on all feedback loop results.
+  #     Update character abilities, traits, and progression based on story events and player choices.
+  #     Handle story-integrated character rewards and development opportunities.
+  #     Ensure character growth reflects the player's journey and choices throughout the game experience.
+  #   expected_output: Results of player action and Local, Quest, Global Feedback Loop that have effect on character, no effect is also valid output.
+  #   agent: CharacterLoopProcessor
+  #   retain_full_context: true
+  #   context:
+  #     - process_story_loop
+  #     - process_quest_loop
+  #   next_tasks:
+  #     - process_local_loop
+  #   output_file: .debug/process_character_loop.md
 
   - name: process_local_loop
     description: |
@@ -411,9 +411,7 @@ tasks:
     agent: LocalLoopProcessor
     retain_full_context: true
     context:
-      - process_global_loop
-      - process_quest_loop
-      - process_character_loop
+      - process_story_loop
     next_tasks:
       - correct_game_difficulty
     output_file: .debug/process_local_loop.md
@@ -427,19 +425,17 @@ tasks:
       Balance challenge with appropriate relief periods to maintain player engagement and prevent frustration.
 
       # Instructions
-      1. Write list of potential corrections to newly decsribed scene according to requirements for each loop (Global, Quest, Local, Character). No corrections is also valid result.
+      1. Write list of potential corrections to newly decsribed scene according to requirements for each loop (Global, Local). No corrections is also valid result.
       2. 
         a. If there any corrections apply them and rewrite Local loop scene description according to them
         b. If there no corrections just rewrite local loop scene description exactly same way as it was
 
       Importnat: Do not assume next player actions, only correct description of scene done by Local Loop. What player will do next, he will decide on his own!
-    expected_output: List of potential corrections, and description of state of scene after applied correction, or same scene as it was described by Local Loop.
+    expected_output: List of potential corrections, and if need rewriten state of scene after applied corrections.
     agent: GameDifficultyCorrector
     retain_full_context: true
     context:
-      - process_global_loop
-      - process_quest_loop
-      - process_character_loop
+      - process_story_loop
       - process_local_loop
     next_tasks:
       - game_feedback_validation
@@ -459,12 +455,12 @@ tasks:
       - correct_game_difficulty
     next_tasks:
       - write_reply_to_user
-      - process_global_loop
+      - process_story_loop
     condition:
       valid: 
         - write_reply_to_user
       invalid: 
-        - process_global_loop
+        - process_story_loop
     output_file: .debug/game_feedback_validation.md
 
   - name: write_reply_to_user
