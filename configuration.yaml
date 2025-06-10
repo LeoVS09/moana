@@ -186,6 +186,11 @@ agents:
     verbose: true
     markdown: true
     self_reflect: true
+    reflect: |
+      Assess that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
+      Manage world-wide events, story progression, and major narrative developments in a way that story be enough unpredictable, but still coherent.
+      Important: Do not assume player actions prior completition, for example if player running into the room with bomb, he can decide to disarm or run away in next turn
+
 
   - name: CharacterLoopProcessor
     role: Character level Game Feedback Loop Processing System
@@ -357,10 +362,6 @@ tasks:
       Scaning flyting space ship -> Discovering that ship have multiple humanoids live-forms, discovering that ship not have organinc live-forms, failed to scan due to ship shields
       Player approach unknown entity -> He discorvers that this entity is long missing friend that mutating under some virus, he discorvers that entity is hologram that disapears, he discovers that it dying girl that need help
     
-    # reflection: |
-    #   Assess that resulted story looks facinating and engaging. Balance predetermined story beats with reactive elements based on significant player actions. 
-    #   Manage world-wide events, story progression, and major narrative developments in a way that story be enough unpredictable, but still coherent.
-
     expected_output: Global story prior to current action point, applied effects, potential events, choosed event, no effect is also valid output.
     agent: StoryLoopProcessor
     next_tasks:
